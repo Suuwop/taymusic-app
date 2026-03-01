@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Журнал Tay Music</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            padding: 20px;
+            margin: 0;
+        }
+        h2 { text-align: center; margin-bottom: 20px; }
+        .student-card {
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .row { display: flex; justify-content: space-between; align-items: center; }
+        .name { font-weight: bold; font-size: 16px; }
+        .status { font-size: 12px; opacity: 0.7; }
+        
+        /* Переключатель (Toggle) */
+        .toggle-container { position: relative; width: 60px; height: 30px; }
+        .toggle-checkbox { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .toggle-slider:before {
+            position: absolute; content: ""; height: 22px; width: 22px; left: 4px; bottom: 4px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .toggle-slider { background-color: #4cd964; } /* Зеленый */
+        input:checked + .toggle-slider:before { transform: translateX(30px); }
+
+        /* Поле для отработки */
+        .makeup-date {
+            margin-top: 10px;
+            display: none; /* Скрыто по умолчанию */
+            animation: fadeIn 0.3s;
+        }
+        .makeup-date label { font-size: 12px; display: block; margin-bottom: 5px; }
+        .makeup-date input {
+            width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ccc;
+            box-sizing: border-box; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color);
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #main-btn {
+            width: 100%; padding: 15px; background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #fff); border: none; border-radius: 10px;
+            font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 id="header-date">📅 Отчет</h2>
+    <div id="list">Loading...</div>
+    <button id="main-btn" onclick="sendData()">📤 Отправить отчет</button>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // На весь экран
+
+        // 1. Получаем данные из URL (которые прислал бот)
+        const urlParams = new URLSearchParams(window.location.search);
+        const rawData = urlParams.get('data');
+        let students = [];
+        
+        try {
+            if (rawData) {
+                // Декодируем данные
+                students = JSON.parse(decodeURIComponent(rawData));
+            } else {
+                // Тестовые данные (если открыть просто в браузере)
+                students = [
+                    {id: 1, time: "14:00", name: "Тест Аня", type: "regular"},
+                    {id: 2, time: "15:00", name: "Тест Саша", type: "makeup"}
+                ];
+            }
+        } catch (e) {
+            document.getElementById('list').innerHTML = "Ошибка данных: " + e;
+        }
+
+        // 2. Рисуем список
+        const listDiv = document.getElementById('list');
+        listDiv.innerHTML = "";
+
+        students.forEach((stud, index) => {
+            let isMakeup = stud.type === 'makeup';
+            let badge = isMakeup ? '🟠 ОТРАБОТКА' : '🟢 Урок';
+            
+            let html = `
+            <div class="student-card" id="card-${index}">
+                <div class="row">
+                    <div>
+                        <div class="name">${stud.time} - ${stud.name}</div>
+                        <div class="status">${badge}</div>
+                    </div>
+                    <div class="toggle-container">
+                        <label>
+                            <input type="checkbox" class="toggle-checkbox" id="check-${index}" onchange="toggleMakeup(${index}, ${isMakeup})">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="makeup-date" id="date-block-${index}">
+                    <label>📅 За какое число долг?</label>
+                    <input type="date" id="date-input-${index}">
+                </div>
+            </div>`;
+            listDiv.innerHTML += html;
+        });
+
+        // 3. Логика показа календаря
+        function toggleMakeup(index, isMakeup) {
+            if (!isMakeup) return; // Если обычный урок - ничего не делаем
+            
+            const checkbox = document.getElementById(`check-${index}`);
+            const dateBlock = document.getElementById(`date-block-${index}`);
+            
+            // Если галочка "Пришел" стоит -> показываем выбор даты
+            if (checkbox.checked) {
+                dateBlock.style.display = 'block';
+            } else {
+                dateBlock.style.display = 'none';
+            }
+        }
+
+        // 4. Отправка данных обратно боту
+        function sendData() {
+            let report = [];
+            let hasError = false;
+
+            students.forEach((stud, index) => {
+                let isPresent = document.getElementById(`check-${index}`).checked;
+                let makeupDate = "";
+
+                if (stud.type === 'makeup' && isPresent) {
+                    let dateVal = document.getElementById(`date-input-${index}`).value;
+                    if (!dateVal) {
+                        alert(`❗ Укажите дату долга для: ${stud.name}`);
+                        hasError = true;
+                    }
+                    makeupDate = dateVal; // "2024-03-01"
+                }
+
+                report.push({
+                    name: stud.name,
+                    time: stud.time,
+                    present: isPresent,
+                    is_makeup: stud.type === 'makeup',
+                    makeup_for: makeupDate
+                });
+            });
+
+            if (hasError) return;
+
+            // Отправляем JSON обратно в Телеграм
+            tg.sendData(JSON.stringify(report));
+        }
+    </script>
+</body>
+</html>
