@@ -170,32 +170,63 @@
         }
 
         function sendData() {
+            // ЭТАП 1: Проверка нажатия
+            alert("1. Кнопка нажата! Начинаем сбор данных...");
+
             let report = [];
             let hasError = false;
 
             students.forEach((stud, index) => {
-                let isPresent = document.getElementById(`check-${index}`).checked;
+                // Ищем чекбокс
+                let checkbox = document.getElementById(`check-${index}`);
+                if (!checkbox) {
+                    alert(`Ошибка: Не найден чекбокс для ${index}`);
+                    return;
+                }
+                
+                let isPresent = checkbox.checked;
                 let makeupDate = "";
 
                 if (stud.type === 'makeup' && isPresent) {
                     let dateVal = document.getElementById(`date-input-${index}`).value;
                     if (!dateVal) {
-                        // Вибрация при ошибке (Haptic Feedback)
-                        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                        alert(`❗ Укажите дату долга для: ${stud.name}`);
+                        alert(`🛑 ОШИБКА: Не выбрана дата для ${stud.name}`);
                         hasError = true;
                     }
                     makeupDate = dateVal;
                 }
-                report.push({ name: stud.name, time: stud.time, present: isPresent, is_makeup: stud.type === 'makeup', makeup_for: makeupDate });
+                report.push({
+                    name: stud.name,
+                    time: stud.time,
+                    present: isPresent,
+                    is_makeup: stud.type === 'makeup',
+                    makeup_for: makeupDate
+                });
             });
 
-            if (hasError) return;
+            if (hasError) {
+                alert("Отправка отменена из-за ошибок.");
+                return;
+            }
 
-            // Вибрация успеха
-            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            tg.sendData(JSON.stringify(report));
+            // ЭТАП 2: Попытка отправки
+            alert("2. Данные собраны. Пытаюсь отправить в ТГ...");
+            
+            try {
+                // Проверка, видит ли приложение Телеграм
+                if (!tg.sendData) {
+                    alert("⛔ Ошибка: Telegram API не найден! Вы точно в Телеграме?");
+                } else {
+                    tg.sendData(JSON.stringify(report));
+                    // После этой команды окно должно закрыться само
+                    alert("3. Команда sendData выполнена. Окно должно закрыться."); 
+                    tg.close(); // Принудительно закрываем
+                }
+            } catch (e) {
+                alert("☠️ КРИТИЧЕСКАЯ ОШИБКА: " + e);
+            }
         }
     </script>
 </body>
 </html>
+
