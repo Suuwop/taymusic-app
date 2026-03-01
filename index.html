@@ -100,10 +100,10 @@
         const rawData = urlParams.get('data');
         let students = [];
 
-        // Имитация загрузки (чтобы анимация не мелькала слишком быстро)
+        // Имитация загрузки
         setTimeout(() => {
             initApp();
-            document.getElementById('loader').style.display = 'none'; // Скрываем лоадер
+            document.getElementById('loader').style.display = 'none'; 
         }, 500);
 
         function initApp() {
@@ -170,27 +170,19 @@
         }
 
         function sendData() {
-            // ЭТАП 1: Проверка нажатия
-            alert("1. Кнопка нажата! Начинаем сбор данных...");
-
             let report = [];
             let hasError = false;
 
             students.forEach((stud, index) => {
-                // Ищем чекбокс
                 let checkbox = document.getElementById(`check-${index}`);
-                if (!checkbox) {
-                    alert(`Ошибка: Не найден чекбокс для ${index}`);
-                    return;
-                }
-                
                 let isPresent = checkbox.checked;
                 let makeupDate = "";
 
                 if (stud.type === 'makeup' && isPresent) {
                     let dateVal = document.getElementById(`date-input-${index}`).value;
                     if (!dateVal) {
-                        alert(`🛑 ОШИБКА: Не выбрана дата для ${stud.name}`);
+                        // Оставляем только важные предупреждения для пользователя
+                        alert(`❗ Укажите дату долга для: ${stud.name}`);
                         hasError = true;
                     }
                     makeupDate = dateVal;
@@ -205,28 +197,15 @@
             });
 
             if (hasError) {
-                alert("Отправка отменена из-за ошибок.");
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                 return;
             }
 
-            // ЭТАП 2: Попытка отправки
-            alert("2. Данные собраны. Пытаюсь отправить в ТГ...");
-            
-            try {
-                // Проверка, видит ли приложение Телеграм
-                if (!tg.sendData) {
-                    alert("⛔ Ошибка: Telegram API не найден! Вы точно в Телеграме?");
-                } else {
-                    tg.sendData(JSON.stringify(report));
-                    // После этой команды окно должно закрыться само
-                    alert("3. Команда sendData выполнена. Окно должно закрыться."); 
-                    tg.close(); // Принудительно закрываем
-                }
-            } catch (e) {
-                alert("☠️ КРИТИЧЕСКАЯ ОШИБКА: " + e);
-            }
+            // Отправка без лишних уведомлений
+            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            tg.sendData(JSON.stringify(report));
+            // tg.close(); // Обычно закрывается само после sendData, но можно оставить
         }
     </script>
 </body>
 </html>
-
