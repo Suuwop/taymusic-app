@@ -51,7 +51,21 @@
         
         .row { display: flex; justify-content: space-between; align-items: center; }
         .name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
-        .status { font-size: 12px; opacity: 0.8; }
+        
+        /* 🔥 НОВЫЙ СТИЛЬ ДЛЯ ВЫПАДАЮЩЕГО СПИСКА ТИПОВ УРОКА */
+        .type-select { 
+            font-size: 12px; 
+            font-weight: 600; 
+            padding: 2px 4px; 
+            border-radius: 4px; 
+            border: none; 
+            outline: none;
+            background: rgba(0,0,0,0.05); 
+            color: inherit; 
+            cursor: pointer; 
+            appearance: none;
+            -webkit-appearance: none;
+        }
         
         /* Тоггл */
         .toggle-container { position: relative; width: 46px; height: 26px; }
@@ -158,6 +172,46 @@
             renderList(dateKey);
         }
 
+        // 🔥 Функция динамической смены цвета типа урока
+        function updateTypeColor(index) {
+            const selectEl = document.getElementById(`type-select-${index}`);
+            if (!selectEl) return;
+            
+            const val = selectEl.value;
+            let color = "#34c759"; // Обычный (зеленый)
+            
+            if (val === 'makeup') color = "#ff9500"; // Оранжевый
+            if (val === 'trial') color = "#00c7c7";  // Бирюзовый
+            if (val === 'onetime') color = "#af52de"; // Фиолетовый
+            if (val === 'cert') color = "#ffcc00";    // Желтый/Золотой
+            
+            selectEl.style.color = color;
+
+            // Управление показом блока отработок (долгов)
+            const checkbox = document.getElementById(`check-${index}`);
+            const dateBlock = document.getElementById(`date-block-${index}`);
+            
+            if (val === 'makeup' && checkbox.checked) {
+                dateBlock.style.display = 'block';
+            } else {
+                dateBlock.style.display = 'none';
+            }
+        }
+
+        // Обновленная функция тоггла (реагирует на тип урока)
+        function toggleMakeup(index) {
+            const selectEl = document.getElementById(`type-select-${index}`);
+            const checkbox = document.getElementById(`check-${index}`);
+            const dateBlock = document.getElementById(`date-block-${index}`);
+            
+            // Показываем блок с датой только если это Отработка и ученик Пришел
+            if (selectEl && selectEl.value === 'makeup' && checkbox.checked) {
+                dateBlock.style.display = 'block';
+            } else {
+                dateBlock.style.display = 'none';
+            }
+        }
+
         function renderList(dateKey) {
             const listDiv = document.getElementById('list');
             listDiv.innerHTML = "";
@@ -187,42 +241,56 @@
             }
 
             students.forEach((stud, index) => {
-                let isMakeup = stud.tp === 'makeup';
                 let isPreDone = stud.tp === 'pre_done';
-                
-                let badge = '🟢 Урок';
-                let badgeStyle = 'color: #34c759';
                 let cardClass = 'student-card';
                 let checkState = ''; 
                 let dateDisplay = 'none';
                 let dateValue = '';
                 
-                if (isMakeup) {
-                    badge = '🟠 ОТРАБОТКА';
-                    badgeStyle = 'color: #ff9500';
-                } else if (isPreDone) {
-                    badge = `🔵 УЖЕ БЫЛО (${stud.i ? stud.i.split('-')[2]+'.'+stud.i.split('-')[1] : ''})`;
-                    badgeStyle = 'color: #007aff';
+                // Авто-определение типа из расписания
+                let defaultType = 'regular';
+                if (stud.tp === 'makeup' || stud.n.toLowerCase().includes('отр')) defaultType = 'makeup';
+                if (stud.n.toLowerCase().includes('проб')) defaultType = 'trial';
+
+                if (isPreDone) {
                     cardClass += ' card-predone';
                     checkState = 'checked disabled';
                 }
 
+                // Восстановление прошлых значений (если отчет уже сдан)
                 if (isSubmitted && !isPreDone) {
                     if (stud.sp === true) {
                         checkState = 'checked';
-                        if (isMakeup) {
+                    }
+                    if (stud.sm) {
+                        defaultType = 'makeup';
+                        dateValue = stud.sm;
+                        if (stud.sp === true) {
                             dateDisplay = 'block';
-                            dateValue = stud.sm || '';
                         }
                     }
                 }
 
-                let cleanName = stud.n.replace(/\d{2}\.\d{2}/, '').replace(/[Оо][Тт][Рр]/, '').trim();
+                let cleanName = stud.n.replace(/\d{2}\.\d{2}/, '').replace(/[Оо][Тт][Рр]/, '').replace(/[Пп][Рр][Оо][Бб]/, '').trim();
+
+                // Формируем бейдж (либо текст "УЖЕ БЫЛО", либо выпадающий список)
+                let badgeHtml = '';
+                if (isPreDone) {
+                    badgeHtml = `<div class="status" style="color: #007aff; font-weight:500">🔵 УЖЕ БЫЛО (${stud.i ? stud.i.split('-')[2]+'.'+stud.i.split('-')[1] : ''})</div>`;
+                } else {
+                    badgeHtml = `
+                    <select id="type-select-${index}" class="type-select" onchange="updateTypeColor(${index})">
+                        <option value="regular" ${defaultType==='regular'?'selected':''}>🟢 Обычный урок</option>
+                        <option value="makeup" ${defaultType==='makeup'?'selected':''}>🟠 Отработка</option>
+                        <option value="trial" ${defaultType==='trial'?'selected':''}>💠 Пробный</option>
+                        <option value="onetime" ${defaultType==='onetime'?'selected':''}>🟣 Разовый</option>
+                        <option value="cert" ${defaultType==='cert'?'selected':''}>🟡 По сертификату</option>
+                    </select>`;
+                }
 
                 // 🔥 УМНЫЙ СПИСОК ДОЛГОВ
                 let hasMissed = stud.md && stud.md.length > 0;
                 let missedOptionsHtml = '';
-                // Показываем обычный инпут даты, только если нет пропусков, ИЛИ если сохраненная дата не из списка пропусков
                 let inputDisplay = (!hasMissed || (dateValue && !stud.md.includes(dateValue))) ? 'block' : 'none';
 
                 if (hasMissed) {
@@ -248,12 +316,12 @@
                     <div class="row">
                         <div>
                             <div class="name">${stud.t} — ${cleanName}</div>
-                            <div class="status" style="${badgeStyle}; font-weight:500">${badge}</div>
+                            ${badgeHtml}
                         </div>
                         <div class="toggle-container">
                             <label>
                                 <input type="checkbox" class="toggle-checkbox" id="check-${index}" 
-                                       onchange="toggleMakeup(${index}, ${isMakeup})" ${checkState}>
+                                       onchange="toggleMakeup(${index})" ${checkState}>
                                 <span class="toggle-slider"></span>
                             </label>
                         </div>
@@ -267,6 +335,11 @@
                     </div>
                 </div>`;
                 listDiv.innerHTML += html;
+                
+                // Инициализируем правильный цвет для выпадающего списка при загрузке
+                if (!isPreDone) {
+                    setTimeout(() => updateTypeColor(index), 10);
+                }
             });
         }
 
@@ -282,13 +355,6 @@
             }
         }
 
-        function toggleMakeup(index, isMakeup) {
-            if (!isMakeup) return;
-            const checkbox = document.getElementById(`check-${index}`);
-            const dateBlock = document.getElementById(`date-block-${index}`);
-            dateBlock.style.display = checkbox.checked ? 'block' : 'none';
-        }
-
         function sendData() {
             let dayData = allData[currentDateKey];
             let students = dayData.items || [];
@@ -301,14 +367,16 @@
                 if (stud.tp === 'pre_done') return;
 
                 let checkbox = document.getElementById(`check-${index}`);
+                let typeSelect = document.getElementById(`type-select-${index}`);
+                
                 let isPresent = checkbox.checked;
+                let lType = typeSelect ? typeSelect.value : 'regular';
                 let makeupDate = "";
 
-                if (stud.tp === 'makeup' && isPresent) {
+                if (lType === 'makeup' && isPresent) {
                     let selectEl = document.getElementById(`missed-select-${index}`);
                     let inputEl = document.getElementById(`date-input-${index}`);
                     
-                    // Проверяем, откуда брать дату: из селекта или инпута
                     if (selectEl && selectEl.value !== 'custom' && selectEl.value !== '') {
                         makeupDate = selectEl.value;
                     } else {
@@ -325,7 +393,7 @@
                     name: stud.n,
                     time: stud.t,
                     present: isPresent,
-                    is_makeup: stud.tp === 'makeup',
+                    l_type: lType, 
                     makeup_for: makeupDate
                 });
             });
@@ -340,7 +408,6 @@
                 items: report
             };
 
-            // Проверка если отчет уже сдан
             if (isSubmitted) {
                 tg.showConfirm("Этот отчет уже был сдан ранее.\n\nВы уверены, что хотите внести изменения и перезаписать его?", function(confirmed) {
                     if (confirmed) {
