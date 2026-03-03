@@ -79,7 +79,7 @@
             margin-top: auto; width: 100%; padding: 15px; 
             background-color: var(--tg-theme-button-color, #3390ec);
             color: var(--tg-theme-button-text-color, #fff); border: none; border-radius: 12px;
-            font-size: 16px; font-weight: 600; cursor: pointer;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.3s;
         }
         
         #empty-msg { text-align: center; margin-top: 50px; opacity: 0.5; font-size: 14px; }
@@ -87,8 +87,7 @@
 </head>
 <body>
 
-    <div class="tabs" id="tabs-container">
-        </div>
+    <div class="tabs" id="tabs-container"></div>
 
     <div id="list"></div>
     <div id="empty-msg" style="display:none">Учеников нет 😴</div>
@@ -99,7 +98,7 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        let allData = {}; // Тут храним данные за 3 дня
+        let allData = {}; // Тут храним данные
         let currentDateKey = ""; // Какая вкладка сейчас открыта
 
         // Инициализация
@@ -117,7 +116,7 @@
                 // Если данных нет совсем
                 if (keys.length === 0) throw new Error("No Data");
 
-                currentDateKey = keys[0]; // Открываем "Сегодня" (самая новая дата)
+                currentDateKey = keys[0]; // Открываем вкладку по умолчанию
                 
                 renderTabs(keys);
                 renderList(currentDateKey);
@@ -131,14 +130,11 @@
             container.innerHTML = "";
             
             keys.forEach(dateStr => {
-                // dateStr = "2026-03-02"
                 let parts = dateStr.split('-');
                 let label = `${parts[2]}.${parts[1]}`; // "02.03"
                 
-                // Определяем "Сегодня", "Вчера" для красоты
                 let d = new Date(dateStr);
                 let today = new Date();
-                // Сброс времени для сравнения
                 today.setHours(0,0,0,0); d.setHours(0,0,0,0);
                 
                 let diff = (today - d) / (1000 * 60 * 60 * 24);
@@ -147,6 +143,12 @@
 
                 let tab = document.createElement('div');
                 tab.className = `tab ${dateStr === currentDateKey ? 'active' : ''}`;
+                
+                // Если отчет за этот день уже сдан, добавляем галочку в таб
+                if (allData[dateStr].is_sub) {
+                    label += " ✅";
+                }
+                
                 tab.innerText = label;
                 tab.onclick = () => switchTab(dateStr);
                 tab.id = `tab-${dateStr}`;
@@ -155,13 +157,9 @@
         }
 
         function switchTab(dateKey) {
-            // Убираем активный класс у старой
             document.getElementById(`tab-${currentDateKey}`).classList.remove('active');
-            // Ставим новой
             currentDateKey = dateKey;
             document.getElementById(`tab-${currentDateKey}`).classList.add('active');
-            
-            // Перерисовываем список
             renderList(dateKey);
         }
 
@@ -169,7 +167,12 @@
             const listDiv = document.getElementById('list');
             listDiv.innerHTML = "";
             
-            let students = allData[dateKey] || [];
+            // 🔥 РАСПАКОВКА НОВОГО ФОРМАТА
+            let dayData = allData[dateKey];
+            if (!dayData) return;
+
+            let students = dayData.items || [];
+            let isSubmitted = dayData.is_sub || false;
             
             if (students.length === 0) {
                 document.getElementById('empty-msg').style.display = 'block';
@@ -180,10 +183,17 @@
                 document.getElementById('main-btn').style.display = 'block';
             }
 
+            // Изменяем кнопку, если отчет уже сдан
+            const mainBtn = document.getElementById('main-btn');
+            if (isSubmitted) {
+                mainBtn.innerHTML = "⚠️ Перезаписать отчет";
+                mainBtn.style.backgroundColor = "#ff9500"; // Оранжевый цвет
+            } else {
+                mainBtn.innerHTML = "📤 Отправить отчет";
+                mainBtn.style.backgroundColor = "var(--tg-theme-button-color, #3390ec)";
+            }
+
             students.forEach((stud, index) => {
-                // ВАЖНО: Мы сократили ключи в Python, тут расшифровываем
-                // stud.t = time, stud.n = name, stud.tp = type, stud.i = info
-                
                 let isMakeup = stud.tp === 'makeup';
                 let isPreDone = stud.tp === 'pre_done';
                 
@@ -191,6 +201,8 @@
                 let badgeStyle = 'color: #34c759';
                 let cardClass = 'student-card';
                 let checkState = ''; 
+                let dateDisplay = 'none';
+                let dateValue = '';
                 
                 if (isMakeup) {
                     badge = '🟠 ОТРАБОТКА';
@@ -199,7 +211,18 @@
                     badge = `🔵 УЖЕ БЫЛО (${stud.i ? stud.i.split('-')[2]+'.'+stud.i.split('-')[1] : ''})`;
                     badgeStyle = 'color: #007aff';
                     cardClass += ' card-predone';
-                    checkState = 'checked disabled'; // Уже сделано, нельзя менять
+                    checkState = 'checked disabled';
+                }
+
+                // 🔥 ВОССТАНОВЛЕНИЕ ПРОШЛЫХ ГАЛОЧЕК
+                if (isSubmitted && !isPreDone) {
+                    if (stud.sp === true) {
+                        checkState = 'checked';
+                        if (isMakeup) {
+                            dateDisplay = 'block';
+                            dateValue = stud.sm || '';
+                        }
+                    }
                 }
 
                 let cleanName = stud.n.replace(/\d{2}\.\d{2}/, '').replace(/[Оо][Тт][Рр]/, '').trim();
@@ -220,9 +243,9 @@
                         </div>
                     </div>
                     
-                    <div class="makeup-date" id="date-block-${index}">
+                    <div class="makeup-date" id="date-block-${index}" style="display: ${dateDisplay}">
                         <label>🗓 Дата долга:</label>
-                        <input type="date" id="date-input-${index}" onclick="try{this.showPicker()}catch(e){}">
+                        <input type="date" id="date-input-${index}" value="${dateValue}" onclick="try{this.showPicker()}catch(e){}">
                     </div>
                 </div>`;
                 listDiv.innerHTML += html;
@@ -237,12 +260,14 @@
         }
 
         function sendData() {
+            let dayData = allData[currentDateKey];
+            let students = dayData.items || [];
+            let isSubmitted = dayData.is_sub || false;
+
             let report = [];
             let hasError = false;
-            let students = allData[currentDateKey]; // Берем данные ТЕКУЩЕЙ вкладки
 
             students.forEach((stud, index) => {
-                // Пропускаем тех, кто "Pre-done" (их не надо отправлять как новую запись, или можно игнорировать)
                 if (stud.tp === 'pre_done') return;
 
                 let checkbox = document.getElementById(`check-${index}`);
@@ -272,15 +297,23 @@
                 return;
             }
             
-            // ВАЖНО: Мы должны сказать боту, ЗА КАКУЮ ДАТУ этот отчет
-            // Т.к. sendData передает только строку, мы упакуем всё в объект
             let payload = {
-                date: currentDateKey, // "2026-03-02"
+                date: currentDateKey, 
                 items: report
             };
 
-            if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            tg.sendData(JSON.stringify(payload));
+            // 🔥 ПРОВЕРКА ЕСЛИ ОТЧЕТ УЖЕ СДАН
+            if (isSubmitted) {
+                tg.showConfirm("Этот отчет уже был сдан ранее.\n\nВы уверены, что хотите внести изменения и перезаписать его?", function(confirmed) {
+                    if (confirmed) {
+                        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        tg.sendData(JSON.stringify(payload));
+                    }
+                });
+            } else {
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                tg.sendData(JSON.stringify(payload));
+            }
         }
     </script>
 </body>
