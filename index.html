@@ -54,17 +54,32 @@
         
         /* 🔥 НОВЫЙ СТИЛЬ ДЛЯ ВЫПАДАЮЩЕГО СПИСКА ТИПОВ УРОКА */
         .type-select { 
-            font-size: 12px; 
+            font-size: 13px; /* Сделали шрифт чуть крупнее */
             font-weight: 600; 
-            padding: 2px 4px; 
-            border-radius: 4px; 
-            border: none; 
+            padding: 6px 28px 6px 10px; /* Добавили отступы, чтобы влезла стрелочка */
+            border-radius: 8px; /* Скруглили углы посильнее */
+            border: 1px solid var(--tg-theme-hint-color, #ccc); /* Добавили явную рамку */
             outline: none;
-            background: rgba(0,0,0,0.05); 
+            background-color: var(--tg-theme-bg-color, #fff); /* Белый фон для контраста */
+            
+            /* 🔥 Добавляем красивую стрелочку вниз */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 14px;
+            
             color: inherit; 
             cursor: pointer; 
             appearance: none;
             -webkit-appearance: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Легкая тень для объема */
+            transition: 0.2s; /* Плавная анимация */
+        }
+        
+        /* Анимация при нажатии на кнопку */
+        .type-select:active {
+            transform: scale(0.96); 
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
         }
         
         /* Тоггл */
@@ -407,5 +422,6 @@
     </script>
 </body>
 </html>
+
 
 
