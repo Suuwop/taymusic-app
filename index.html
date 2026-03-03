@@ -184,10 +184,10 @@
             if (val === 'trial') color = "#00c7c7";  // Бирюзовый
             if (val === 'onetime') color = "#af52de"; // Фиолетовый
             if (val === 'cert') color = "#ffcc00";    // Желтый/Золотой
+            if (val === 'late') color = "#ff3b30";    // 🔴 Опоздал (Красный)
             
             selectEl.style.color = color;
 
-            // Управление показом блока отработок (долгов)
             const checkbox = document.getElementById(`check-${index}`);
             const dateBlock = document.getElementById(`date-block-${index}`);
             
@@ -247,7 +247,6 @@
                 let dateDisplay = 'none';
                 let dateValue = '';
                 
-                // Авто-определение типа из расписания
                 let defaultType = 'regular';
                 if (stud.tp === 'makeup' || stud.n.toLowerCase().includes('отр')) defaultType = 'makeup';
                 if (stud.n.toLowerCase().includes('проб')) defaultType = 'trial';
@@ -257,27 +256,22 @@
                     checkState = 'checked disabled';
                 }
 
-                // Восстановление прошлых значений (если отчет уже сдан)
                 if (isSubmitted && !isPreDone) {
-                    if (stud.sp === true) {
-                        checkState = 'checked';
-                    }
+                    if (stud.sp === true) checkState = 'checked';
                     if (stud.sm) {
                         defaultType = 'makeup';
                         dateValue = stud.sm;
-                        if (stud.sp === true) {
-                            dateDisplay = 'block';
-                        }
+                        if (stud.sp === true) dateDisplay = 'block';
                     }
                 }
 
                 let cleanName = stud.n.replace(/\d{2}\.\d{2}/, '').replace(/[Оо][Тт][Рр]/, '').replace(/[Пп][Рр][Оо][Бб]/, '').trim();
 
-                // Формируем бейдж (либо текст "УЖЕ БЫЛО", либо выпадающий список)
                 let badgeHtml = '';
                 if (isPreDone) {
                     badgeHtml = `<div class="status" style="color: #007aff; font-weight:500">🔵 УЖЕ БЫЛО (${stud.i ? stud.i.split('-')[2]+'.'+stud.i.split('-')[1] : ''})</div>`;
                 } else {
+                    // 🔥 ДОБАВЛЕНА ОПЦИЯ "ОПОЗДАЛ/А"
                     badgeHtml = `
                     <select id="type-select-${index}" class="type-select" onchange="updateTypeColor(${index})">
                         <option value="regular" ${defaultType==='regular'?'selected':''}>🟢 Обычный урок</option>
@@ -285,10 +279,10 @@
                         <option value="trial" ${defaultType==='trial'?'selected':''}>💠 Пробный</option>
                         <option value="onetime" ${defaultType==='onetime'?'selected':''}>🟣 Разовый</option>
                         <option value="cert" ${defaultType==='cert'?'selected':''}>🟡 По сертификату</option>
+                        <option value="late" ${defaultType==='late'?'selected':''}>⏰ Опоздал/а</option>
                     </select>`;
                 }
 
-                // 🔥 УМНЫЙ СПИСОК ДОЛГОВ
                 let hasMissed = stud.md && stud.md.length > 0;
                 let missedOptionsHtml = '';
                 let inputDisplay = (!hasMissed || (dateValue && !stud.md.includes(dateValue))) ? 'block' : 'none';
@@ -297,18 +291,10 @@
                     let opts = `<option value="">-- Выберите долг --</option>`;
                     stud.md.forEach(d => {
                         let parts = d.split('-');
-                        let ruDate = `${parts[2]}.${parts[1]}`;
-                        let isSel = (dateValue === d) ? 'selected' : '';
-                        opts += `<option value="${d}" ${isSel}>Пропуск от ${ruDate}</option>`;
+                        opts += `<option value="${d}" ${(dateValue === d) ? 'selected' : ''}>Пропуск от ${parts[2]}.${parts[1]}</option>`;
                     });
-                    
-                    let isCustomSel = (dateValue && !stud.md.includes(dateValue)) ? 'selected' : '';
-                    opts += `<option value="custom" ${isCustomSel}>Своя дата (календарь)...</option>`;
-                    
-                    missedOptionsHtml = `
-                    <select id="missed-select-${index}" onchange="checkCustomDate(${index})">
-                        ${opts}
-                    </select>`;
+                    opts += `<option value="custom" ${(dateValue && !stud.md.includes(dateValue)) ? 'selected' : ''}>Своя дата (календарь)...</option>`;
+                    missedOptionsHtml = `<select id="missed-select-${index}" onchange="checkCustomDate(${index})">${opts}</select>`;
                 }
 
                 let html = `
@@ -336,13 +322,11 @@
                 </div>`;
                 listDiv.innerHTML += html;
                 
-                // Инициализируем правильный цвет для выпадающего списка при загрузке
-                if (!isPreDone) {
-                    setTimeout(() => updateTypeColor(index), 10);
-                }
+                if (!isPreDone) setTimeout(() => updateTypeColor(index), 10);
             });
         }
 
+        
         // Функция для показа календаря, если выбрали "Своя дата"
         function checkCustomDate(index) {
             const selectEl = document.getElementById(`missed-select-${index}`);
@@ -423,4 +407,5 @@
     </script>
 </body>
 </html>
+
 
