@@ -69,9 +69,9 @@
 
         /* Дата */
         .makeup-date { margin-top: 10px; display: none; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
-        .makeup-date input {
+        .makeup-date input[type="date"], .makeup-date select {
             width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ccc;
-            box-sizing: border-box; font-size: 16px;
+            box-sizing: border-box; font-size: 16px; margin-bottom: 8px;
             background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color);
         }
 
@@ -98,8 +98,8 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        let allData = {}; // Тут храним данные
-        let currentDateKey = ""; // Какая вкладка сейчас открыта
+        let allData = {}; 
+        let currentDateKey = ""; 
 
         // Инициализация
         const urlParams = new URLSearchParams(window.location.search);
@@ -107,16 +107,12 @@
 
         try {
             if (rawData) {
-                // Парсим большой пакет данных
                 allData = JSON.parse(decodeURIComponent(rawData));
-                
-                // Находим ключи (даты) и сортируем их (Новейшая первая)
                 let keys = Object.keys(allData).sort().reverse();
                 
-                // Если данных нет совсем
                 if (keys.length === 0) throw new Error("No Data");
 
-                currentDateKey = keys[0]; // Открываем вкладку по умолчанию
+                currentDateKey = keys[0]; 
                 
                 renderTabs(keys);
                 renderList(currentDateKey);
@@ -131,7 +127,7 @@
             
             keys.forEach(dateStr => {
                 let parts = dateStr.split('-');
-                let label = `${parts[2]}.${parts[1]}`; // "02.03"
+                let label = `${parts[2]}.${parts[1]}`; 
                 
                 let d = new Date(dateStr);
                 let today = new Date();
@@ -144,7 +140,6 @@
                 let tab = document.createElement('div');
                 tab.className = `tab ${dateStr === currentDateKey ? 'active' : ''}`;
                 
-                // Если отчет за этот день уже сдан, добавляем галочку в таб
                 if (allData[dateStr].is_sub) {
                     label += " ✅";
                 }
@@ -167,7 +162,6 @@
             const listDiv = document.getElementById('list');
             listDiv.innerHTML = "";
             
-            // 🔥 РАСПАКОВКА НОВОГО ФОРМАТА
             let dayData = allData[dateKey];
             if (!dayData) return;
 
@@ -183,11 +177,10 @@
                 document.getElementById('main-btn').style.display = 'block';
             }
 
-            // Изменяем кнопку, если отчет уже сдан
             const mainBtn = document.getElementById('main-btn');
             if (isSubmitted) {
                 mainBtn.innerHTML = "⚠️ Перезаписать отчет";
-                mainBtn.style.backgroundColor = "#ff9500"; // Оранжевый цвет
+                mainBtn.style.backgroundColor = "#ff9500"; 
             } else {
                 mainBtn.innerHTML = "📤 Отправить отчет";
                 mainBtn.style.backgroundColor = "var(--tg-theme-button-color, #3390ec)";
@@ -214,7 +207,6 @@
                     checkState = 'checked disabled';
                 }
 
-                // 🔥 ВОССТАНОВЛЕНИЕ ПРОШЛЫХ ГАЛОЧЕК
                 if (isSubmitted && !isPreDone) {
                     if (stud.sp === true) {
                         checkState = 'checked';
@@ -226,6 +218,30 @@
                 }
 
                 let cleanName = stud.n.replace(/\d{2}\.\d{2}/, '').replace(/[Оо][Тт][Рр]/, '').trim();
+
+                // 🔥 УМНЫЙ СПИСОК ДОЛГОВ
+                let hasMissed = stud.md && stud.md.length > 0;
+                let missedOptionsHtml = '';
+                // Показываем обычный инпут даты, только если нет пропусков, ИЛИ если сохраненная дата не из списка пропусков
+                let inputDisplay = (!hasMissed || (dateValue && !stud.md.includes(dateValue))) ? 'block' : 'none';
+
+                if (hasMissed) {
+                    let opts = `<option value="">-- Выберите долг --</option>`;
+                    stud.md.forEach(d => {
+                        let parts = d.split('-');
+                        let ruDate = `${parts[2]}.${parts[1]}`;
+                        let isSel = (dateValue === d) ? 'selected' : '';
+                        opts += `<option value="${d}" ${isSel}>Пропуск от ${ruDate}</option>`;
+                    });
+                    
+                    let isCustomSel = (dateValue && !stud.md.includes(dateValue)) ? 'selected' : '';
+                    opts += `<option value="custom" ${isCustomSel}>Своя дата (календарь)...</option>`;
+                    
+                    missedOptionsHtml = `
+                    <select id="missed-select-${index}" onchange="checkCustomDate(${index})">
+                        ${opts}
+                    </select>`;
+                }
 
                 let html = `
                 <div class="${cardClass}">
@@ -244,12 +260,26 @@
                     </div>
                     
                     <div class="makeup-date" id="date-block-${index}" style="display: ${dateDisplay}">
-                        <label>🗓 Дата долга:</label>
-                        <input type="date" id="date-input-${index}" value="${dateValue}" onclick="try{this.showPicker()}catch(e){}">
+                        <label>🗓 Закрыть долг за:</label><br>
+                        ${missedOptionsHtml}
+                        <input type="date" id="date-input-${index}" value="${dateValue}" 
+                               style="display: ${inputDisplay};" onclick="try{this.showPicker()}catch(e){}">
                     </div>
                 </div>`;
                 listDiv.innerHTML += html;
             });
+        }
+
+        // Функция для показа календаря, если выбрали "Своя дата"
+        function checkCustomDate(index) {
+            const selectEl = document.getElementById(`missed-select-${index}`);
+            const inputEl = document.getElementById(`date-input-${index}`);
+            if (selectEl.value === 'custom') {
+                inputEl.style.display = 'block';
+                inputEl.focus();
+            } else {
+                inputEl.style.display = 'none';
+            }
         }
 
         function toggleMakeup(index, isMakeup) {
@@ -275,12 +305,20 @@
                 let makeupDate = "";
 
                 if (stud.tp === 'makeup' && isPresent) {
-                    let dateVal = document.getElementById(`date-input-${index}`).value;
-                    if (!dateVal) {
-                        alert(`❗ Укажите дату долга для: ${stud.n}`);
+                    let selectEl = document.getElementById(`missed-select-${index}`);
+                    let inputEl = document.getElementById(`date-input-${index}`);
+                    
+                    // Проверяем, откуда брать дату: из селекта или инпута
+                    if (selectEl && selectEl.value !== 'custom' && selectEl.value !== '') {
+                        makeupDate = selectEl.value;
+                    } else {
+                        makeupDate = inputEl.value;
+                    }
+
+                    if (!makeupDate) {
+                        alert(`❗ Выберите или укажите дату долга для: ${stud.n}`);
                         hasError = true;
                     }
-                    makeupDate = dateVal;
                 }
 
                 report.push({
@@ -302,7 +340,7 @@
                 items: report
             };
 
-            // 🔥 ПРОВЕРКА ЕСЛИ ОТЧЕТ УЖЕ СДАН
+            // Проверка если отчет уже сдан
             if (isSubmitted) {
                 tg.showConfirm("Этот отчет уже был сдан ранее.\n\nВы уверены, что хотите внести изменения и перезаписать его?", function(confirmed) {
                     if (confirmed) {
