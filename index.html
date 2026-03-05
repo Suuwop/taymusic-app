@@ -21,7 +21,7 @@
             background: var(--tg-theme-secondary-bg-color, #f0f0f0);
             border-radius: 12px;
             padding: 4px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .tab {
             flex: 1;
@@ -54,15 +54,14 @@
         
         /* 🔥 НОВЫЙ СТИЛЬ ДЛЯ ВЫПАДАЮЩЕГО СПИСКА ТИПОВ УРОКА */
         .type-select { 
-            font-size: 13px; /* Сделали шрифт чуть крупнее */
+            font-size: 13px;
             font-weight: 600; 
-            padding: 6px 28px 6px 10px; /* Добавили отступы, чтобы влезла стрелочка */
-            border-radius: 8px; /* Скруглили углы посильнее */
-            border: 1px solid var(--tg-theme-hint-color, #ccc); /* Добавили явную рамку */
+            padding: 6px 28px 6px 10px; 
+            border-radius: 8px; 
+            border: 1px solid var(--tg-theme-hint-color, #ccc); 
             outline: none;
-            background-color: var(--tg-theme-bg-color, #fff); /* Белый фон для контраста */
+            background-color: var(--tg-theme-bg-color, #fff); 
             
-            /* 🔥 Добавляем красивую стрелочку вниз */
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
             background-repeat: no-repeat;
             background-position: right 8px center;
@@ -72,11 +71,10 @@
             cursor: pointer; 
             appearance: none;
             -webkit-appearance: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Легкая тень для объема */
-            transition: 0.2s; /* Плавная анимация */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            transition: 0.2s; 
         }
         
-        /* Анимация при нажатии на кнопку */
         .type-select:active {
             transform: scale(0.96); 
             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
@@ -104,6 +102,16 @@
             background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color);
         }
 
+        /* 🔥 Кнопка Болезни */
+        #sick-btn {
+            width: 100%; padding: 10px;
+            background-color: rgba(255, 59, 48, 0.1);
+            color: #ff3b30; border: 1px dashed #ff3b30; border-radius: 12px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            margin-bottom: 15px; transition: 0.3s;
+        }
+        #sick-btn:active { background-color: rgba(255, 59, 48, 0.2); }
+
         #main-btn {
             margin-top: auto; width: 100%; padding: 15px; 
             background-color: var(--tg-theme-button-color, #3390ec);
@@ -117,7 +125,8 @@
 <body>
 
     <div class="tabs" id="tabs-container"></div>
-
+    <button id="sick-btn" onclick="markAllSick()">🤒 Я болею (Отменить все уроки за день)</button>
+    
     <div id="list"></div>
     <div id="empty-msg" style="display:none">Учеников нет 😴</div>
     
@@ -187,7 +196,27 @@
             renderList(dateKey);
         }
 
-        // 🔥 Функция динамической смены цвета типа урока
+        // 🔥 Кнопка "Я болею"
+        function markAllSick() {
+            tg.showConfirm("Вы уверены, что хотите отметить ВСЕ уроки за этот день как отмененные по вашей болезни?", function(confirmed) {
+                if (confirmed) {
+                    let students = allData[currentDateKey].items || [];
+                    students.forEach((stud, i) => {
+                        if (stud.tp === 'pre_done') return;
+                        let selectEl = document.getElementById(`type-select-${i}`);
+                        let checkEl = document.getElementById(`check-${i}`);
+                        if (selectEl && checkEl) {
+                            selectEl.value = 'teacher_cancel';
+                            checkEl.checked = false;
+                            updateTypeColor(i);
+                        }
+                    });
+                    if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                }
+            });
+        }
+
+        // Функция динамической смены цвета типа урока
         function updateTypeColor(index) {
             const selectEl = document.getElementById(`type-select-${index}`);
             if (!selectEl) return;
@@ -195,17 +224,22 @@
             const val = selectEl.value;
             let color = "#34c759"; // Обычный (зеленый)
             
-            if (val === 'makeup') color = "#ff9500"; // Оранжевый
-            if (val === 'trial') color = "#00c7c7";  // Бирюзовый
-            if (val === 'onetime') color = "#af52de"; // Фиолетовый
-            if (val === 'cert') color = "#ffcc00";    // Желтый/Золотой
-            if (val === 'late') color = "#ff3b30";    // 🔴 Опоздал (Красный)
+            if (val === 'makeup') color = "#ff9500"; 
+            if (val === 'trial') color = "#00c7c7";  
+            if (val === 'onetime') color = "#af52de"; 
+            if (val === 'cert') color = "#ffcc00";    
+            if (val === 'late') color = "#ff3b30";    
+            if (val === 'teacher_cancel') color = "#ff3b30"; // Отмена педагогом
             
             selectEl.style.color = color;
 
             const checkbox = document.getElementById(`check-${index}`);
             const dateBlock = document.getElementById(`date-block-${index}`);
             
+            if (val === 'teacher_cancel') {
+                checkbox.checked = false; // При болезни галочка снимается
+            }
+
             if (val === 'makeup' && checkbox.checked) {
                 dateBlock.style.display = 'block';
             } else {
@@ -213,13 +247,17 @@
             }
         }
 
-        // Обновленная функция тоггла (реагирует на тип урока)
+        // Обновленная функция тоггла
         function toggleMakeup(index) {
             const selectEl = document.getElementById(`type-select-${index}`);
             const checkbox = document.getElementById(`check-${index}`);
             const dateBlock = document.getElementById(`date-block-${index}`);
             
-            // Показываем блок с датой только если это Отработка и ученик Пришел
+            if (selectEl && selectEl.value === 'teacher_cancel' && checkbox.checked) {
+                selectEl.value = 'regular';
+                updateTypeColor(index);
+            }
+            
             if (selectEl && selectEl.value === 'makeup' && checkbox.checked) {
                 dateBlock.style.display = 'block';
             } else {
@@ -240,10 +278,12 @@
             if (students.length === 0) {
                 document.getElementById('empty-msg').style.display = 'block';
                 document.getElementById('main-btn').style.display = 'none';
+                document.getElementById('sick-btn').style.display = 'none';
                 return;
             } else {
                 document.getElementById('empty-msg').style.display = 'none';
                 document.getElementById('main-btn').style.display = 'block';
+                document.getElementById('sick-btn').style.display = 'block';
             }
 
             const mainBtn = document.getElementById('main-btn');
@@ -273,10 +313,16 @@
 
                 if (isSubmitted && !isPreDone) {
                     if (stud.sp === true) checkState = 'checked';
+                    
+                    if (stud.st === "Отмена (педагог)") defaultType = 'teacher_cancel';
+                    if (stud.st === "Опоздал/а") defaultType = 'late';
+
                     if (stud.sm) {
                         defaultType = 'makeup';
                         dateValue = stud.sm;
-                        if (stud.sp === true) dateDisplay = 'block';
+                        if (stud.sp === true) {
+                            dateDisplay = 'block';
+                        }
                     }
                 }
 
@@ -286,7 +332,6 @@
                 if (isPreDone) {
                     badgeHtml = `<div class="status" style="color: #007aff; font-weight:500">🔵 УЖЕ БЫЛО (${stud.i ? stud.i.split('-')[2]+'.'+stud.i.split('-')[1] : ''})</div>`;
                 } else {
-                    // 🔥 ДОБАВЛЕНА ОПЦИЯ "ОПОЗДАЛ/А"
                     badgeHtml = `
                     <select id="type-select-${index}" class="type-select" onchange="updateTypeColor(${index})">
                         <option value="regular" ${defaultType==='regular'?'selected':''}>🟢 Обычный урок</option>
@@ -295,21 +340,38 @@
                         <option value="onetime" ${defaultType==='onetime'?'selected':''}>🟣 Разовый</option>
                         <option value="cert" ${defaultType==='cert'?'selected':''}>🟡 По сертификату</option>
                         <option value="late" ${defaultType==='late'?'selected':''}>⏰ Опоздал/а</option>
+                        <option value="teacher_cancel" ${defaultType==='teacher_cancel'?'selected':''}>🤒 Отмена (педагог)</option>
                     </select>`;
                 }
 
+                // 🔥 УМНЫЙ СПИСОК ДОЛГОВ (с учетом вины педагога)
                 let hasMissed = stud.md && stud.md.length > 0;
                 let missedOptionsHtml = '';
-                let inputDisplay = (!hasMissed || (dateValue && !stud.md.includes(dateValue))) ? 'block' : 'none';
+                
+                let inputDisplay = (!hasMissed || (dateValue && !stud.md.some(d => d.includes(dateValue)))) ? 'block' : 'none';
 
                 if (hasMissed) {
                     let opts = `<option value="">-- Выберите долг --</option>`;
-                    stud.md.forEach(d => {
+                    stud.md.forEach(d_raw => {
+                        let parts_arr = d_raw.split('|');
+                        let d = parts_arr[0];
+                        let reason = parts_arr[1];
+                        
                         let parts = d.split('-');
-                        opts += `<option value="${d}" ${(dateValue === d) ? 'selected' : ''}>Пропуск от ${parts[2]}.${parts[1]}</option>`;
+                        let ruDate = `${parts[2]}.${parts[1]}`;
+                        
+                        let label = (reason === 'teacher') ? `Отмена от ${ruDate} (болел педагог)` : `Пропуск от ${ruDate}`;
+                        let isSel = (dateValue === d) ? 'selected' : '';
+                        opts += `<option value="${d_raw}" ${isSel}>${label}</option>`;
                     });
-                    opts += `<option value="custom" ${(dateValue && !stud.md.includes(dateValue)) ? 'selected' : ''}>Своя дата (календарь)...</option>`;
-                    missedOptionsHtml = `<select id="missed-select-${index}" onchange="checkCustomDate(${index})">${opts}</select>`;
+                    
+                    let isCustomSel = (dateValue && !stud.md.some(d => d.includes(dateValue))) ? 'selected' : '';
+                    opts += `<option value="custom" ${isCustomSel}>Своя дата (календарь)...</option>`;
+                    
+                    missedOptionsHtml = `
+                    <select id="missed-select-${index}" onchange="checkCustomDate(${index})">
+                        ${opts}
+                    </select>`;
                 }
 
                 let html = `
@@ -337,11 +399,12 @@
                 </div>`;
                 listDiv.innerHTML += html;
                 
-                if (!isPreDone) setTimeout(() => updateTypeColor(index), 10);
+                if (!isPreDone) {
+                    setTimeout(() => updateTypeColor(index), 10);
+                }
             });
         }
 
-        
         // Функция для показа календаря, если выбрали "Своя дата"
         function checkCustomDate(index) {
             const selectEl = document.getElementById(`missed-select-${index}`);
@@ -371,6 +434,8 @@
                 let isPresent = checkbox.checked;
                 let lType = typeSelect ? typeSelect.value : 'regular';
                 let makeupDate = "";
+
+                if (lType === 'teacher_cancel') isPresent = false; // Страховка
 
                 if (lType === 'makeup' && isPresent) {
                     let selectEl = document.getElementById(`missed-select-${index}`);
@@ -422,6 +487,4 @@
     </script>
 </body>
 </html>
-
-
 
