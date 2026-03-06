@@ -322,7 +322,7 @@
                 // 1. Базовая логика из базы данных
                 let defaultType = 'regular';
                 if (stud.tp === 'makeup' || stud.n.toLowerCase().includes('отр')) defaultType = 'makeup';
-                if (stud.n.toLowerCase().includes('проб')) defaultType = 'trial';
+                if (stud.tp === 'trial' || stud.n.toLowerCase().includes('проб')) defaultType = 'trial';
 
                 // 🔥 ГАЛОЧКИ ВЫКЛЮЧЕНЫ ПО УМОЛЧАНИЮ
                 let checkState = ''; 
@@ -509,4 +509,5 @@
     </script>
 </body>
 </html>
+
 
