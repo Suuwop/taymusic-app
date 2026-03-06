@@ -14,7 +14,6 @@
             display: flex; flex-direction: column; min-height: 95vh;
         }
 
-        /* --- СТИЛИ ТАБОВ (ВКЛАДОК) --- */
         .tabs {
             display: flex;
             justify-content: space-between;
@@ -41,7 +40,6 @@
             font-weight: bold;
         }
 
-        /* Карточки */
         .student-card {
             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
             border-radius: 12px; padding: 15px; margin-bottom: 12px;
@@ -52,7 +50,6 @@
         .row { display: flex; justify-content: space-between; align-items: center; }
         .name { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
         
-        /* 🔥 НОВЫЙ СТИЛЬ ДЛЯ ВЫПАДАЮЩЕГО СПИСКА ТИПОВ УРОКА */
         .type-select { 
             font-size: 13px;
             font-weight: 600; 
@@ -80,7 +77,6 @@
             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
         }
         
-        /* Тоггл */
         .toggle-container { position: relative; width: 46px; height: 26px; }
         .toggle-checkbox { opacity: 0; width: 0; height: 0; }
         .toggle-slider {
@@ -94,7 +90,6 @@
         input:checked + .toggle-slider { background-color: #34c759; } 
         input:checked + .toggle-slider:before { transform: translateX(20px); }
 
-        /* Дата */
         .makeup-date { margin-top: 10px; display: none; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
         .makeup-date input[type="date"], .makeup-date select {
             width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ccc;
@@ -102,7 +97,6 @@
             background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color);
         }
 
-        /* 🔥 Кнопка Болезни */
         #sick-btn {
             width: 100%; padding: 10px;
             background-color: rgba(255, 59, 48, 0.1);
@@ -139,7 +133,6 @@
         let allData = {}; 
         let currentDateKey = ""; 
 
-        // Инициализация
         const urlParams = new URLSearchParams(window.location.search);
         const rawData = urlParams.get('data');
 
@@ -147,11 +140,8 @@
             if (rawData) {
                 allData = JSON.parse(decodeURIComponent(rawData));
                 let keys = Object.keys(allData).sort().reverse();
-                
                 if (keys.length === 0) throw new Error("No Data");
-
                 currentDateKey = keys[0]; 
-                
                 renderTabs(keys);
                 renderList(currentDateKey);
             }
@@ -177,11 +167,7 @@
 
                 let tab = document.createElement('div');
                 tab.className = `tab ${dateStr === currentDateKey ? 'active' : ''}`;
-                
-                if (allData[dateStr].is_sub) {
-                    label += " ✅";
-                }
-                
+                if (allData[dateStr].is_sub) label += " ✅";
                 tab.innerText = label;
                 tab.onclick = () => switchTab(dateStr);
                 tab.id = `tab-${dateStr}`;
@@ -189,14 +175,44 @@
             });
         }
 
+        // 🔥 СОХРАНЕНИЕ ЧЕРНОВИКОВ МЕЖДУ ВКЛАДКАМИ
+        function saveCurrentTabState() {
+            if (!currentDateKey || !allData[currentDateKey]) return;
+            let students = allData[currentDateKey].items;
+            
+            students.forEach((stud, index) => {
+                if (stud.tp === 'pre_done') return;
+                
+                let checkbox = document.getElementById(`check-${index}`);
+                let typeSelect = document.getElementById(`type-select-${index}`);
+                
+                if (checkbox && typeSelect) {
+                    stud._draft_present = checkbox.checked;
+                    stud._draft_type = typeSelect.value;
+                    
+                    let draftDate = "";
+                    if (typeSelect.value === 'makeup' && checkbox.checked) {
+                        let selectEl = document.getElementById(`missed-select-${index}`);
+                        let inputEl = document.getElementById(`date-input-${index}`);
+                        if (selectEl && selectEl.value !== 'custom' && selectEl.value !== '') {
+                            draftDate = selectEl.value;
+                        } else if (inputEl) {
+                            draftDate = inputEl.value;
+                        }
+                    }
+                    stud._draft_date = draftDate;
+                }
+            });
+        }
+
         function switchTab(dateKey) {
+            saveCurrentTabState(); // Сначала сохраняем то, что накликали
             document.getElementById(`tab-${currentDateKey}`).classList.remove('active');
             currentDateKey = dateKey;
             document.getElementById(`tab-${currentDateKey}`).classList.add('active');
             renderList(dateKey);
         }
 
-        // 🔥 Кнопка "Я болею"
         function markAllSick() {
             tg.showConfirm("Вы уверены, что хотите отметить ВСЕ уроки за этот день как отмененные по вашей болезни?", function(confirmed) {
                 if (confirmed) {
@@ -216,29 +232,25 @@
             });
         }
 
-        // Функция динамической смены цвета типа урока
         function updateTypeColor(index) {
             const selectEl = document.getElementById(`type-select-${index}`);
             if (!selectEl) return;
             
             const val = selectEl.value;
-            let color = "#34c759"; // Обычный (зеленый)
-            
+            let color = "#34c759"; 
             if (val === 'makeup') color = "#ff9500"; 
             if (val === 'trial') color = "#00c7c7";  
             if (val === 'onetime') color = "#af52de"; 
             if (val === 'cert') color = "#ffcc00";    
             if (val === 'late') color = "#ff3b30";    
-            if (val === 'teacher_cancel') color = "#ff3b30"; // Отмена педагогом
+            if (val === 'teacher_cancel') color = "#ff3b30"; 
             
             selectEl.style.color = color;
 
             const checkbox = document.getElementById(`check-${index}`);
             const dateBlock = document.getElementById(`date-block-${index}`);
             
-            if (val === 'teacher_cancel') {
-                checkbox.checked = false; // При болезни галочка снимается
-            }
+            if (val === 'teacher_cancel') checkbox.checked = false; 
 
             if (val === 'makeup' && checkbox.checked) {
                 dateBlock.style.display = 'block';
@@ -247,7 +259,6 @@
             }
         }
 
-        // Обновленная функция тоггла
         function toggleMakeup(index) {
             const selectEl = document.getElementById(`type-select-${index}`);
             const checkbox = document.getElementById(`check-${index}`);
@@ -302,6 +313,7 @@
                 let dateDisplay = 'none';
                 let dateValue = '';
                 
+                // 1. Базовая логика из базы данных
                 let defaultType = 'regular';
                 if (stud.tp === 'makeup' || stud.n.toLowerCase().includes('отр')) defaultType = 'makeup';
                 if (stud.n.toLowerCase().includes('проб')) defaultType = 'trial';
@@ -311,18 +323,28 @@
                     checkState = 'checked disabled';
                 }
 
+                // 2. Логика восстановления из отправленного отчета
                 if (isSubmitted && !isPreDone) {
                     if (stud.sp === true) checkState = 'checked';
-                    
                     if (stud.st === "Отмена (педагог)") defaultType = 'teacher_cancel';
                     if (stud.st === "Опоздал/а") defaultType = 'late';
 
                     if (stud.sm) {
                         defaultType = 'makeup';
                         dateValue = stud.sm;
-                        if (stud.sp === true) {
-                            dateDisplay = 'block';
-                        }
+                        if (stud.sp === true) dateDisplay = 'block';
+                    }
+                }
+
+                // 3. 🔥 ПЕРЕЗАПИСЬ ЧЕРНОВИКАМИ (Если человек уже кликал в этой сессии)
+                if (stud._draft_type !== undefined) {
+                    defaultType = stud._draft_type;
+                    checkState = stud._draft_present ? 'checked' : '';
+                    if (defaultType === 'makeup' && stud._draft_present) {
+                        dateValue = stud._draft_date;
+                        dateDisplay = 'block';
+                    } else {
+                        dateDisplay = 'none';
                     }
                 }
 
@@ -344,10 +366,8 @@
                     </select>`;
                 }
 
-                // 🔥 УМНЫЙ СПИСОК ДОЛГОВ (с учетом вины педагога)
                 let hasMissed = stud.md && stud.md.length > 0;
                 let missedOptionsHtml = '';
-                
                 let inputDisplay = (!hasMissed || (dateValue && !stud.md.some(d => d.includes(dateValue)))) ? 'block' : 'none';
 
                 if (hasMissed) {
@@ -405,7 +425,6 @@
             });
         }
 
-        // Функция для показа календаря, если выбрали "Своя дата"
         function checkCustomDate(index) {
             const selectEl = document.getElementById(`missed-select-${index}`);
             const inputEl = document.getElementById(`date-input-${index}`);
@@ -418,6 +437,9 @@
         }
 
         function sendData() {
+            // Сохраняем перед отправкой на случай, если мы не переключали табы
+            saveCurrentTabState(); 
+            
             let dayData = allData[currentDateKey];
             let students = dayData.items || [];
             let isSubmitted = dayData.is_sub || false;
@@ -428,29 +450,15 @@
             students.forEach((stud, index) => {
                 if (stud.tp === 'pre_done') return;
 
-                let checkbox = document.getElementById(`check-${index}`);
-                let typeSelect = document.getElementById(`type-select-${index}`);
-                
-                let isPresent = checkbox.checked;
-                let lType = typeSelect ? typeSelect.value : 'regular';
-                let makeupDate = "";
+                let isPresent = stud._draft_present !== undefined ? stud._draft_present : false;
+                let lType = stud._draft_type || 'regular';
+                let makeupDate = stud._draft_date || "";
 
-                if (lType === 'teacher_cancel') isPresent = false; // Страховка
+                if (lType === 'teacher_cancel') isPresent = false;
 
-                if (lType === 'makeup' && isPresent) {
-                    let selectEl = document.getElementById(`missed-select-${index}`);
-                    let inputEl = document.getElementById(`date-input-${index}`);
-                    
-                    if (selectEl && selectEl.value !== 'custom' && selectEl.value !== '') {
-                        makeupDate = selectEl.value;
-                    } else {
-                        makeupDate = inputEl.value;
-                    }
-
-                    if (!makeupDate) {
-                        alert(`❗ Выберите или укажите дату долга для: ${stud.n}`);
-                        hasError = true;
-                    }
+                if (lType === 'makeup' && isPresent && !makeupDate) {
+                    alert(`❗ Выберите или укажите дату долга для: ${stud.n}`);
+                    hasError = true;
                 }
 
                 report.push({
