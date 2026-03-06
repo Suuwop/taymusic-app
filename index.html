@@ -379,33 +379,57 @@
                     </select>`;
                 }
 
-                let hasMissed = stud.md && stud.md.length > 0;
+                // 🔥 УМНЫЙ ВЫПАДАЮЩИЙ СПИСОК (С возвратом сохраненных дат и фиксом форматов)
+                let normalizedDateValue = dateValue;
+                if (dateValue && dateValue.includes('.')) {
+                    let dParts = dateValue.split('.');
+                    if (dParts.length === 3) normalizedDateValue = `${dParts[2]}-${dParts[1]}-${dParts[0]}`;
+                }
+
+                let hasMissed = (stud.md && stud.md.length > 0) || normalizedDateValue;
                 let missedOptionsHtml = '';
-                let inputDisplay = (!hasMissed || (dateValue && !stud.md.some(d => d.includes(dateValue)))) ? 'block' : 'none';
+                let inputDisplay = 'none';
 
                 if (hasMissed) {
                     let opts = `<option value="">-- Выберите долг --</option>`;
-                    stud.md.forEach(d_raw => {
-                        let parts_arr = d_raw.split('|');
-                        let d = parts_arr[0];
-                        let reason = parts_arr[1];
-                        
-                        let parts = d.split('-');
-                        let ruDate = `${parts[2]}.${parts[1]}`;
-                        
-                        let label = (reason === 'teacher') ? `Отмена от ${ruDate} (болел педагог)` : `Пропуск от ${ruDate}`;
-                        let isSel = (dateValue === d) ? 'selected' : '';
-                        opts += `<option value="${d_raw}" ${isSel}>${label}</option>`;
-                    });
+                    let foundInMd = false;
+
+                    if (stud.md) {
+                        stud.md.forEach(d_raw => {
+                            let parts_arr = d_raw.split('|');
+                            let d = parts_arr[0]; 
+                            let reason = parts_arr[1];
+                            
+                            let parts = d.split('-');
+                            let ruDate = `${parts[2]}.${parts[1]}`;
+                            
+                            let label = (reason === 'teacher') ? `Отмена от ${ruDate} (болел педагог)` : `Пропуск от ${ruDate}`;
+                            let isSel = (normalizedDateValue === d || dateValue === d_raw) ? 'selected' : '';
+                            if (isSel) foundInMd = true;
+                            opts += `<option value="${d_raw}" ${isSel}>${label}</option>`;
+                        });
+                    }
                     
-                    let isCustomSel = (dateValue && !stud.md.some(d => d.includes(dateValue))) ? 'selected' : '';
+                    // Если дата сохранена, но бот её уже вычеркнул из активных долгов
+                    if (normalizedDateValue && !foundInMd && dateValue !== 'custom') {
+                        let pureDate = normalizedDateValue.split('|')[0];
+                        let parts = pureDate.split('-');
+                        let ruDate = parts.length === 3 ? `${parts[2]}.${parts[1]}` : pureDate;
+                        opts += `<option value="${pureDate}" selected>✅ Сохраненный долг за ${ruDate}</option>`;
+                    }
+                    
+                    let isCustomSel = (dateValue === 'custom') ? 'selected' : '';
                     opts += `<option value="custom" ${isCustomSel}>Своя дата (календарь)...</option>`;
                     
                     missedOptionsHtml = `
                     <select id="missed-select-${index}" onchange="checkCustomDate(${index})">
                         ${opts}
                     </select>`;
+                } else {
+                    inputDisplay = 'block'; 
                 }
+
+                let pureDateForInput = normalizedDateValue ? normalizedDateValue.split('|')[0] : '';
 
                 let html = `
                 <div class="${cardClass}">
@@ -426,7 +450,7 @@
                     <div class="makeup-date" id="date-block-${index}" style="display: ${dateDisplay}">
                         <label>🗓 Закрыть долг за:</label><br>
                         ${missedOptionsHtml}
-                        <input type="date" id="date-input-${index}" value="${dateValue}" 
+                        <input type="date" id="date-input-${index}" value="${pureDateForInput}" 
                                style="display: ${inputDisplay};" onclick="try{this.showPicker()}catch(e){}">
                     </div>
                 </div>`;
@@ -507,6 +531,4 @@
     </script>
 </body>
 </html>
-
-
 
