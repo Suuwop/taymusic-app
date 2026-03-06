@@ -139,11 +139,10 @@
         try {
             if (rawData) {
                 allData = JSON.parse(decodeURIComponent(rawData));
-                let keys = Object.keys(allData).sort().reverse();
+                let keys = Object.keys(allData).sort(); 
                 
                 if (keys.length === 0) throw new Error("No Data");
-
-                currentDateKey = keys[0]; 
+                currentDateKey = keys[keys.length - 1]; 
                 
                 renderTabs(keys);
                 renderList(currentDateKey);
@@ -531,4 +530,5 @@
     </script>
 </body>
 </html>
+
 
