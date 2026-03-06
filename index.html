@@ -140,8 +140,11 @@
             if (rawData) {
                 allData = JSON.parse(decodeURIComponent(rawData));
                 let keys = Object.keys(allData).sort().reverse();
+                
                 if (keys.length === 0) throw new Error("No Data");
+
                 currentDateKey = keys[0]; 
+                
                 renderTabs(keys);
                 renderList(currentDateKey);
             }
@@ -167,7 +170,11 @@
 
                 let tab = document.createElement('div');
                 tab.className = `tab ${dateStr === currentDateKey ? 'active' : ''}`;
-                if (allData[dateStr].is_sub) label += " ✅";
+                
+                if (allData[dateStr].is_sub) {
+                    label += " ✅";
+                }
+                
                 tab.innerText = label;
                 tab.onclick = () => switchTab(dateStr);
                 tab.id = `tab-${dateStr}`;
@@ -309,7 +316,6 @@
             students.forEach((stud, index) => {
                 let isPreDone = stud.tp === 'pre_done';
                 let cardClass = 'student-card';
-                let checkState = ''; 
                 let dateDisplay = 'none';
                 let dateValue = '';
                 
@@ -317,6 +323,9 @@
                 let defaultType = 'regular';
                 if (stud.tp === 'makeup' || stud.n.toLowerCase().includes('отр')) defaultType = 'makeup';
                 if (stud.n.toLowerCase().includes('проб')) defaultType = 'trial';
+
+                // 🔥 ГАЛОЧКИ ВЫКЛЮЧЕНЫ ПО УМОЛЧАНИЮ
+                let checkState = ''; 
 
                 if (isPreDone) {
                     cardClass += ' card-predone';
@@ -336,7 +345,7 @@
                     }
                 }
 
-                // 3. 🔥 ПЕРЕЗАПИСЬ ЧЕРНОВИКАМИ (Если человек уже кликал в этой сессии)
+                // 3. 🔥 ПЕРЕЗАПИСЬ ЧЕРНОВИКАМИ
                 if (stud._draft_type !== undefined) {
                     defaultType = stud._draft_type;
                     checkState = stud._draft_present ? 'checked' : '';
@@ -348,7 +357,13 @@
                     }
                 }
 
-                let cleanName = stud.n.replace(/\d{2}\.\d{2}/, '').replace(/[Оо][Тт][Рр]/, '').replace(/[Пп][Рр][Оо][Бб]/, '').trim();
+                // 🔥 УМНАЯ ОЧИСТКА ИМЕНИ (убрал НБ, ПРОБ, ОТР и лишние пробелы)
+                let cleanName = stud.n.replace(/\d{2}\.\d{2}/g, '')
+                                      .replace(/[Оо][Тт][Рр]/g, '')
+                                      .replace(/[Пп][Рр][Оо][Бб]/g, '')
+                                      .replace(/(^|\s)[Нн][Бб]($|\s)/g, ' ')
+                                      .replace(/\s+/g, ' ')
+                                      .trim();
 
                 let badgeHtml = '';
                 if (isPreDone) {
@@ -437,7 +452,6 @@
         }
 
         function sendData() {
-            // Сохраняем перед отправкой на случай, если мы не переключали табы
             saveCurrentTabState(); 
             
             let dayData = allData[currentDateKey];
