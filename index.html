@@ -472,6 +472,34 @@
             }
         }
 
+        function hasUnsavedChanges(dateKey) {
+            let dayData = allData[dateKey];
+            if (!dayData || !dayData.items) return false;
+            
+            // Проверяем, есть ли хотя бы один ученик с сохраненным черновиком в этой вкладке
+            for (let i = 0; i < dayData.items.length; i++) {
+                let stud = dayData.items[i];
+                if (stud.tp !== 'pre_done' && stud._draft_type !== undefined) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function submitCurrentTab(payload, isSubmitted) {
+            if (isSubmitted) {
+                tg.showConfirm("Этот отчет уже был сдан ранее.\n\nВы уверены, что хотите внести изменения и перезаписать его?", function(confirmed) {
+                    if (confirmed) {
+                        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                        tg.sendData(JSON.stringify(payload));
+                    }
+                });
+            } else {
+                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                tg.sendData(JSON.stringify(payload));
+            }
+        }
+
         function sendData() {
             saveCurrentTabState(); 
             
@@ -515,16 +543,24 @@
                 items: report
             };
 
-            if (isSubmitted) {
-                tg.showConfirm("Этот отчет уже был сдан ранее.\n\nВы уверены, что хотите внести изменения и перезаписать его?", function(confirmed) {
+            // Проверяем, есть ли изменения в других вкладках
+            let modifiedOtherTabs = [];
+            Object.keys(allData).forEach(key => {
+                if (key !== currentDateKey && hasUnsavedChanges(key)) {
+                    let parts = key.split('-');
+                    modifiedOtherTabs.push(`${parts[2]}.${parts[1]}`);
+                }
+            });
+
+            if (modifiedOtherTabs.length > 0) {
+                let msg = `ВНИМАНИЕ! ⚠️\n\nВы внесли изменения в другие дни (${modifiedOtherTabs.join(', ')}), но отправить можно только ОДИН день за раз.\n\nСейчас отправится только отчет за текущую вкладку, а изменения в других вкладках не сохранятся.\n\nПродолжить отправку?`;
+                tg.showConfirm(msg, function(confirmed) {
                     if (confirmed) {
-                        if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                        tg.sendData(JSON.stringify(payload));
+                        submitCurrentTab(payload, isSubmitted);
                     }
                 });
             } else {
-                if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                tg.sendData(JSON.stringify(payload));
+                submitCurrentTab(payload, isSubmitted);
             }
         }
     </script>
