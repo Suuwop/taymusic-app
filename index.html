@@ -269,7 +269,30 @@
             const selectEl = document.getElementById(`type-select-${index}`);
             const checkbox = document.getElementById(`check-${index}`);
             const dateBlock = document.getElementById(`date-block-${index}`);
-            
+            const stud = allData[currentDateKey].items[index];
+
+            // Проверяем: педагог хочет отметить НБ-ученика как "Пришел"
+            if (checkbox.checked && stud.nb) {
+                tg.showConfirm(
+                    "В таблице указано, что этот ученик сегодня не будет на уроке (НБ).\nВы уверены, что он всё же пришёл?",
+                    function(confirmed) {
+                        if (!confirmed) {
+                            checkbox.checked = false;
+                        } else {
+                            // Продолжаем стандартную логику
+                            if (selectEl && selectEl.value === 'teacher_cancel') {
+                                selectEl.value = 'regular';
+                                updateTypeColor(index);
+                            }
+                            if (selectEl && selectEl.value === 'makeup') {
+                                dateBlock.style.display = 'block';
+                            }
+                        }
+                    }
+                );
+                return; // Прерываем: ждём ответа пользователя
+            }
+
             if (selectEl && selectEl.value === 'teacher_cancel' && checkbox.checked) {
                 selectEl.value = 'regular';
                 updateTypeColor(index);
@@ -318,11 +341,11 @@
                 let dateDisplay = 'none';
                 let dateValue = '';
                 
-                // 1. Базовая логика из базы данных
+                // 1. Тип урока БЕРёМ ТОЛЬКО из stud.tp (бот всегда правильно его определяет)
                 let defaultType = 'regular';
-                if (stud.tp === 'makeup' || stud.n.toLowerCase().includes('отр')) defaultType = 'makeup';
-                if (stud.tp === 'trial' || stud.n.toLowerCase().includes('проб')) defaultType = 'trial';
-                if (stud.tp === 'cert' || stud.n.toLowerCase().includes('серт') || stud.n.toLowerCase().includes('сртф')) defaultType = 'cert';
+                if (stud.tp === 'makeup')  defaultType = 'makeup';
+                if (stud.tp === 'trial')   defaultType = 'trial';
+                if (stud.tp === 'cert')    defaultType = 'cert';
 
                 // 🔥 ГАЛОЧКИ ВЫКЛЮЧЕНЫ ПО УМОЛЧАНИЮ
                 let checkState = ''; 
@@ -357,10 +380,11 @@
                     }
                 }
 
-                // 🔥 ОСТАВЛЯЕМ ПОДСКАЗКИ (убираем только даты и лишние пробелы)
-                let cleanName = stud.n.replace(/\d{2}\.\d{2}/g, '')
-                                      .replace(/\s+/g, ' ')
-                                      .trim();
+                // Очищаем имя от всех меток и дат для чистоты отображения:
+                let cleanName = stud.n
+                    .replace(/\d{1,2}\.\d{1,2}/g, '')  // даты
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
 
                 let badgeHtml = '';
                 if (isPreDone) {
