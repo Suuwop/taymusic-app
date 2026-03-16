@@ -270,6 +270,26 @@
             const checkbox = document.getElementById(`check-${index}`);
             const dateBlock = document.getElementById(`date-block-${index}`);
             
+            // 🔥 НБ-ПОДТВЕРЖДЕНИЕ: если ученик помечен НБ и педагог ставит галочку "пришёл"
+            let students = allData[currentDateKey].items || [];
+            let stud = students[index];
+            if (stud && stud.nb === true && checkbox.checked) {
+                tg.showConfirm("В таблице указано, что ученик сегодня не был на уроке. Вы уверены, что он пришёл?", function(confirmed) {
+                    if (!confirmed) {
+                        checkbox.checked = false;
+                        dateBlock.style.display = 'none';
+                        return;
+                    }
+                    // Подтвердил — продолжаем обычную логику
+                    finishToggle(index, selectEl, checkbox, dateBlock);
+                });
+                return; // Ждём ответа из confirm
+            }
+            
+            finishToggle(index, selectEl, checkbox, dateBlock);
+        }
+        
+        function finishToggle(index, selectEl, checkbox, dateBlock) {
             if (selectEl && selectEl.value === 'teacher_cancel' && checkbox.checked) {
                 selectEl.value = 'regular';
                 updateTypeColor(index);
