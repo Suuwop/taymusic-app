@@ -367,6 +367,10 @@
                 if (stud.tp === 'makeup' || stud.n.toLowerCase().includes('отр')) defaultType = 'makeup';
                 if (stud.tp === 'trial' || stud.n.toLowerCase().includes('проб')) defaultType = 'trial';
                 if (stud.tp === 'cert' || stud.n.toLowerCase().includes('серт') || stud.n.toLowerCase().includes('сртф')) defaultType = 'cert';
+                if (stud.tp === 'substitution') defaultType = 'substitution';
+                if (stud.tp === 'teacher_cancel') defaultType = 'teacher_cancel';
+                if (stud.tp === 'late') defaultType = 'late';
+                if (stud.tp === 'onetime') defaultType = 'onetime';
 
                 // 🔥 ГАЛОЧКИ ВЫКЛЮЧЕНЫ ПО УМОЛЧАНИЮ
                 let checkState = ''; 
@@ -390,7 +394,7 @@
                 }
 
                 // 3. 🔥 ПЕРЕЗАПИСЬ ЧЕРНОВИКАМИ
-                let subValue = "";
+                let subValue = stud.sub_for || "";
                 if (stud._draft_type !== undefined) {
                     defaultType = stud._draft_type;
                     checkState = stud._draft_present ? 'checked' : '';
