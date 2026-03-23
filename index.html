@@ -132,6 +132,7 @@
 
         let allData = {}; 
         let currentDateKey = ""; 
+        let journalMeta = {teachers: [], current_teacher: ""};
 
         const urlParams = new URLSearchParams(window.location.search);
         const rawData = urlParams.get('data');
@@ -139,6 +140,12 @@
         try {
             if (rawData) {
                 allData = JSON.parse(decodeURIComponent(rawData));
+                
+                if (allData["__meta__"]) {
+                    journalMeta = allData["__meta__"];
+                    delete allData["__meta__"];
+                }
+                
                 let keys = Object.keys(allData).sort(); 
                 
                 if (keys.length === 0) throw new Error("No Data");
@@ -204,6 +211,11 @@
                             draftDate = selectEl.value;
                         } else if (inputEl) {
                             draftDate = inputEl.value;
+                        }
+                    } else if (typeSelect.value === 'substitution') {
+                        let subSelect = document.getElementById(`sub-select-${index}`);
+                        if (subSelect && subSelect.value) {
+                            stud._draft_sub = subSelect.value;
                         }
                     }
                     stud._draft_date = draftDate;
@@ -366,6 +378,7 @@
                 }
 
                 // 3. 🔥 ПЕРЕЗАПИСЬ ЧЕРНОВИКАМИ
+                let subValue = "";
                 if (stud._draft_type !== undefined) {
                     defaultType = stud._draft_type;
                     checkState = stud._draft_present ? 'checked' : '';
@@ -374,6 +387,9 @@
                         dateDisplay = 'block';
                     } else {
                         dateDisplay = 'none';
+                    }
+                    if (defaultType === 'substitution') {
+                        subValue = stud._draft_sub || "";
                     }
                 }
 
@@ -395,6 +411,7 @@
                         <option value="cert" ${defaultType==='cert'?'selected':''}>🟡 По сертификату</option>
                         <option value="late" ${defaultType==='late'?'selected':''}>⏰ Опоздал (педагог)</option>
                         <option value="teacher_cancel" ${defaultType==='teacher_cancel'?'selected':''}>🤒 Отмена (педагог)</option>
+                        <option value="substitution" ${defaultType==='substitution'?'selected':''}>🤝 За другого педагога</option>
                     </select>`;
                 }
 
@@ -449,6 +466,17 @@
                 }
 
                 let pureDateForInput = normalizedDateValue ? normalizedDateValue.split('|')[0] : '';
+                
+                let subDisplay = (defaultType === 'substitution') ? 'block' : 'none';
+                let subOptionsHtml = `<option value="">-- Выберите педагога --</option>`;
+                if (journalMeta && journalMeta.teachers) {
+                    journalMeta.teachers.forEach(t => {
+                        if (t !== journalMeta.current_teacher) {
+                            let isSel = (subValue === t) ? 'selected' : '';
+                            subOptionsHtml += `<option value="${t}" ${isSel}>${t}</option>`;
+                        }
+                    });
+                }
 
                 let html = `
                 <div class="${cardClass}">
@@ -471,6 +499,12 @@
                         ${missedOptionsHtml}
                         <input type="date" id="date-input-${index}" value="${pureDateForInput}" 
                                style="display: ${inputDisplay};" onclick="try{this.showPicker()}catch(e){}">
+                    </div>
+                    <div class="makeup-date" id="sub-block-${index}" style="display: ${subDisplay}">
+                        <label>🎭 Кого заменяете?:</label><br>
+                        <select id="sub-select-${index}">
+                            ${subOptionsHtml}
+                        </select>
                     </div>
                 </div>`;
                 listDiv.innerHTML += html;
@@ -536,6 +570,7 @@
                 let isPresent = stud._draft_present !== undefined ? stud._draft_present : false;
                 let lType = stud._draft_type || 'regular';
                 let makeupDate = stud._draft_date || "";
+                let subTeacher = stud._draft_sub || "";
 
                 if (lType === 'teacher_cancel') isPresent = false;
 
@@ -543,13 +578,24 @@
                     alert(`❗ Выберите или укажите дату долга для: ${stud.n}`);
                     hasError = true;
                 }
+                
+                if (lType === 'substitution' && isPresent && !subTeacher) {
+                    alert(`❗ Выберите педагога для замены: ${stud.n}`);
+                    hasError = true;
+                }
+
+                // Пропускаем отправку отсутствующих при замене
+                if (lType === 'substitution' && !isPresent) {
+                    return; 
+                }
 
                 report.push({
                     name: stud.n,
                     time: stud.t,
                     present: isPresent,
                     l_type: lType, 
-                    makeup_for: makeupDate
+                    makeup_for: makeupDate,
+                    sub_for: subTeacher
                 });
             });
 
@@ -586,4 +632,5 @@
     </script>
 </body>
 </html>
+
 
