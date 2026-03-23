@@ -268,8 +268,6 @@
             selectEl.style.borderColor = color;
 
             const checkbox = document.getElementById(`check-${index}`);
-            if (checkbox) checkbox.nextElementSibling.style.backgroundColor = checkbox.checked ? color : '#ff3b30';
-
             const dateBlock = document.getElementById(`date-block-${index}`);
             if (val === 'teacher_cancel') checkbox.checked = false; 
 
@@ -646,6 +644,4 @@
     </script>
 </body>
 </html>
-
-
 
