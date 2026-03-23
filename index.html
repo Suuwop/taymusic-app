@@ -262,18 +262,32 @@
             if (val === 'cert') color = "#ffcc00";    
             if (val === 'late') color = "#ff3b30";    
             if (val === 'teacher_cancel') color = "#ff3b30"; 
+            if (val === 'substitution') color = "#ff2d55";
             
             selectEl.style.color = color;
+            selectEl.style.borderColor = color;
 
             const checkbox = document.getElementById(`check-${index}`);
+            if (checkbox) checkbox.nextElementSibling.style.backgroundColor = checkbox.checked ? color : '#ff3b30';
+
             const dateBlock = document.getElementById(`date-block-${index}`);
-            
             if (val === 'teacher_cancel') checkbox.checked = false; 
 
-            if (val === 'makeup' && checkbox.checked) {
-                dateBlock.style.display = 'block';
-            } else {
-                dateBlock.style.display = 'none';
+            if (dateBlock) {
+                if (val === 'makeup' && checkbox.checked) {
+                    dateBlock.style.display = 'block';
+                } else {
+                    dateBlock.style.display = 'none';
+                }
+            }
+            
+            const subBlock = document.getElementById(`sub-block-${index}`);
+            if (subBlock) {
+                if (val === 'substitution') {
+                    subBlock.style.display = 'block';
+                } else {
+                    subBlock.style.display = 'none';
+                }
             }
         }
 
@@ -632,5 +646,6 @@
     </script>
 </body>
 </html>
+
 
 
