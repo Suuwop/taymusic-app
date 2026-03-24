@@ -370,7 +370,7 @@
                 if (stud.tp === 'substitution') defaultType = 'substitution';
                 if (stud.tp === 'teacher_cancel') defaultType = 'teacher_cancel';
                 if (stud.tp === 'late') defaultType = 'late';
-                if (stud.tp === 'onetime') defaultType = 'onetime';
+                if (stud.tp === 'onetime' || stud.n.toLowerCase().includes('раз')) defaultType = 'onetime';
 
                 // 🔥 ГАЛОЧКИ ВЫКЛЮЧЕНЫ ПО УМОЛЧАНИЮ
                 let checkState = ''; 
