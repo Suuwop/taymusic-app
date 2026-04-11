@@ -114,6 +114,27 @@
         }
         
         #empty-msg { text-align: center; margin-top: 50px; opacity: 0.5; font-size: 14px; }
+        
+        .delete-btn {
+            background: none; border: none; color: #ff3b30; 
+            font-size: 20px; cursor: pointer; padding: 0 10px; margin-left: auto;
+        }
+        .add-btn {
+            width: 100%; padding: 12px;
+            background-color: transparent;
+            color: var(--tg-theme-button-color, #3390ec); 
+            border: 2px dashed var(--tg-theme-button-color, #3390ec); 
+            border-radius: 12px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            margin-bottom: 15px; transition: 0.3s;
+        }
+        .add-btn:active { background-color: rgba(51, 144, 236, 0.1); }
+        .manual-name-input {
+            width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #ccc;
+            font-size: 16px; margin-top: 5px;
+            background: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000);
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -122,6 +143,7 @@
     <button id="sick-btn" onclick="markAllSick()">🤒 Я болею (Отменить все уроки за день)</button>
     
     <div id="list"></div>
+    <button id="add-lesson-btn" class="add-btn" onclick="addManualLesson()" style="display:none">➕ Добавить ученика</button>
     <div id="empty-msg" style="display:none">Учеников нет 😴</div>
     
     <button id="main-btn" onclick="sendData()">📤 Отправить отчет</button>
@@ -195,6 +217,11 @@
             
             students.forEach((stud, index) => {
                 if (stud.tp === 'pre_done') return;
+                
+                if (stud.is_manual) {
+                    let nameInput = document.getElementById(`manual-name-${index}`);
+                    if (nameInput) stud.n = nameInput.value;
+                }
                 
                 let checkbox = document.getElementById(`check-${index}`);
                 let typeSelect = document.getElementById(`type-select-${index}`);
@@ -338,14 +365,14 @@
             
             if (students.length === 0) {
                 document.getElementById('empty-msg').style.display = 'block';
-                document.getElementById('main-btn').style.display = 'none';
+                document.getElementById('main-btn').style.display = 'block';
                 document.getElementById('sick-btn').style.display = 'none';
-                return;
             } else {
                 document.getElementById('empty-msg').style.display = 'none';
                 document.getElementById('main-btn').style.display = 'block';
                 document.getElementById('sick-btn').style.display = 'block';
             }
+            document.getElementById('add-lesson-btn').style.display = 'block';
 
             const mainBtn = document.getElementById('main-btn');
             if (isSubmitted) {
@@ -494,14 +521,29 @@
                     });
                 }
 
+                let nameHtml = "";
+                let deleteHtml = "";
+                
+                if (stud.is_manual) {
+                    let escapedName = stud.n ? stud.n.replace(/"/g, '&quot;') : '';
+                    nameHtml = `<div class="name">${stud.t} — <input type="text" id="manual-name-${index}" class="manual-name-input" value="${escapedName}" placeholder="Имя ученика"></div>`;
+                    deleteHtml = `<button class="delete-btn" onclick="deleteLesson(${index})">🗑️</button>`;
+                } else {
+                    nameHtml = `<div class="name">${stud.t} — ${cleanName}</div>`;
+                    if (!isPreDone) {
+                        deleteHtml = `<button class="delete-btn" onclick="deleteLesson(${index})">🗑️</button>`;
+                    }
+                }
+
                 let html = `
                 <div class="${cardClass}">
                     <div class="row">
-                        <div>
-                            <div class="name">${stud.t} — ${cleanName}</div>
+                        <div style="flex-grow: 1; margin-right: 10px;">
+                            ${nameHtml}
                             ${badgeHtml}
                         </div>
-                        <div class="toggle-container">
+                        ${deleteHtml}
+                        <div class="toggle-container" style="margin-left: 10px;">
                             <label>
                                 <input type="checkbox" class="toggle-checkbox" id="check-${index}" 
                                        onchange="toggleMakeup(${index})" ${checkState}>
@@ -556,6 +598,38 @@
             return false;
         }
 
+        function addManualLesson() {
+            saveCurrentTabState();
+            let dayData = allData[currentDateKey];
+            if (!dayData.items) dayData.items = [];
+            
+            dayData.items.push({
+                n: "",
+                t: "--:--",
+                tp: "regular",
+                is_manual: true,
+                _draft_type: "regular",
+                _draft_present: true
+            });
+            
+            renderList(currentDateKey);
+            
+            setTimeout(() => {
+                window.scrollTo(0, document.body.scrollHeight);
+            }, 100);
+        }
+
+        function deleteLesson(index) {
+            tg.showConfirm("Удалить этот урок из отчета?", function(confirmed) {
+                if (confirmed) {
+                    saveCurrentTabState();
+                    allData[currentDateKey].items.splice(index, 1);
+                    renderList(currentDateKey);
+                    if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                }
+            });
+        }
+
         function submitCurrentTab(payload, isSubmitted) {
             if (isSubmitted) {
                 tg.showConfirm("Этот отчет уже был сдан ранее.\n\nВы уверены, что хотите внести изменения и перезаписать его?", function(confirmed) {
@@ -587,6 +661,13 @@
                 let lType = stud._draft_type || 'regular';
                 let makeupDate = stud._draft_date || "";
                 let subTeacher = stud._draft_sub || "";
+                
+                if (stud.is_manual) {
+                    if (!stud.n.trim()) {
+                        alert(`❗ Введите имя для добавленного ученика!`);
+                        hasError = true;
+                    }
+                }
 
                 if (lType === 'teacher_cancel') isPresent = false;
 
