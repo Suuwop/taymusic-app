@@ -149,6 +149,7 @@
     
     <button id="main-btn" onclick="sendData()">📤 Отправить отчет</button>
 
+    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
@@ -158,11 +159,23 @@
         let journalMeta = {teachers: [], current_teacher: ""};
 
         const urlParams = new URLSearchParams(window.location.search);
+        const cdata = urlParams.get('cdata');
         const rawData = urlParams.get('data');
 
         try {
-            if (rawData) {
-                allData = JSON.parse(decodeURIComponent(rawData));
+            if (cdata || rawData) {
+                if (cdata) {
+                    const binaryString = atob(cdata);
+                    const len = binaryString.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    const decompressed = pako.inflate(bytes, { to: 'string' });
+                    allData = JSON.parse(decompressed);
+                } else {
+                    allData = JSON.parse(decodeURIComponent(rawData));
+                }
                 
                 if (allData["__meta__"]) {
                     journalMeta = allData["__meta__"];
