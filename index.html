@@ -493,13 +493,28 @@
                             let d = parts_arr[0]; 
                             let reason = parts_arr[1];
                             
-                            let parts = d.split('-');
-                            let ruDate = `${parts[2]}.${parts[1]}`;
+                            // 🔥 Определяем вину педагога по значку
+                            if (d.includes('🔴')) {
+                                reason = 'teacher';
+                            }
                             
-                            let label = (reason === 'teacher') ? `Отмена от ${ruDate} (болел педагог)` : `Пропуск от ${ruDate}`;
+                            let parts = d.split('-');
+                            let ruDate = parts.length === 3 ? `${parts[2]}.${parts[1]}` : d;
+                            // Убираем значок только для красивого отображения
+                            let displayDate = ruDate.replace('🔴', '');
+                            
+                            let label = (reason === 'teacher') ? `Отмена от ${displayDate} (болел педагог)` : `Пропуск от ${displayDate}`;
                             let isSel = (normalizedDateValue === d || dateValue === d_raw) ? 'selected' : '';
                             if (isSel) foundInMd = true;
-                            opts += `<option value="${d_raw}" ${isSel}>${label}</option>`;
+                            
+                            // Сохраняем значок в value, чтобы при отправке на сервер он не потерялся
+                            // И добавляем |teacher для надежности
+                            let finalVal = d;
+                            if (reason === 'teacher' && !finalVal.includes('|teacher')) {
+                                finalVal += '|teacher';
+                            }
+                            
+                            opts += `<option value="${finalVal}" ${isSel}>${label}</option>`;
                         });
                     }
                     
@@ -508,7 +523,8 @@
                         let pureDate = normalizedDateValue.split('|')[0];
                         let parts = pureDate.split('-');
                         let ruDate = parts.length === 3 ? `${parts[2]}.${parts[1]}` : pureDate;
-                        opts += `<option value="${pureDate}" selected>✅ Сохраненный долг за ${ruDate}</option>`;
+                        let displayRuDate = ruDate.replace('🔴', '');
+                        opts += `<option value="${pureDate}" selected>✅ Сохраненный долг за ${displayRuDate}</option>`;
                     }
                     
                     let isCustomSel = (dateValue === 'custom') ? 'selected' : '';
