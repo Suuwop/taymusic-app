@@ -18,45 +18,38 @@
             text-align: center;
         }
         .hall-top {
-            background-color: #0b5912;
+            background-color: #0b5912; /* Темно-зеленый (Курпачи) */
             border-bottom-left-radius: 40px;
             border-bottom-right-radius: 40px;
             overflow: hidden;
             position: relative;
-            padding-bottom: 25px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
-        .scene {
-            background-color: #2b2b2b;
-            border-bottom-left-radius: 50%;
-            border-bottom-right-radius: 50%;
-            height: 90px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
+        .overlay-scene {
+            position: absolute;
+            top: 7%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
             font-family: 'Russo One', sans-serif;
-            margin-bottom: 20px;
-            margin-left: -20%;
-            width: 140%;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            color: white;
             letter-spacing: 2px;
+            z-index: 10;
         }
-        .fan-zone {
+        .overlay-fan-zone {
+            position: absolute;
+            top: 36%;
+            left: 50%;
+            transform: translateX(-50%);
             font-size: 24px;
             font-family: 'Russo One', sans-serif;
-            margin-bottom: 10px;
+            color: white;
             letter-spacing: 1px;
+            z-index: 10;
         }
-        .arc-wrapper {
-            position: relative;
-            width: 100%;
-            height: 160px; 
-            margin-bottom: 10px;
-        }
-        .arc-price-tag {
+        .overlay-arc-price {
             position: absolute;
-            top: 45px;
+            top: 51%;
             left: 50%;
             transform: translateX(-50%);
             background-color: #7b1d28;
@@ -67,11 +60,20 @@
             color: white;
             z-index: 10;
         }
-        .arc-row {
+        .overlay-kurpachi {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5;
+            top: 78%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Russo One', sans-serif;
+            font-size: 22px;
+            line-height: 1.2;
+            color: white;
+            letter-spacing: 1px;
+            width: 100%;
+            z-index: 10;
         }
+        
         .seat-circle { 
             fill: white; 
             transition: fill 0.3s; 
@@ -98,24 +100,16 @@
             padding: 16px 14px;
             border-radius: 25px;
             position: absolute;
-            bottom: 5px;
+            top: 61%;
             font-size: 15px;
             z-index: 10;
             transition: background-color 0.3s;
             box-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
-        .vip-left { left: 15px; transform: rotate(-45deg); }
-        .vip-right { right: 15px; transform: rotate(45deg); }
+        .vip-left { left: 4%; transform: rotate(-40deg); }
+        .vip-right { right: 4%; transform: rotate(40deg); }
         .vip-zone.sold { background-color: #e53935; color: white; }
 
-        .kurpachi {
-            font-family: 'Russo One', sans-serif;
-            font-size: 22px;
-            line-height: 1.2;
-            margin-top: 10px;
-            letter-spacing: 1px;
-        }
-        
         .lower-section {
             padding: 25px 10px;
         }
@@ -208,21 +202,33 @@
     <div id="loading">Загрузка билетов...</div>
 
     <div class="hall-top">
-        <div class="scene">СЦЕНА</div>
-        <div class="fan-zone">ФАН-ЗОНА</div>
+        <!-- SVG Background and Seats -->
+        <svg id="hall-svg" viewBox="0 0 400 340" style="width: 100%; height: auto; display: block;" xmlns="http://www.w3.org/2000/svg">
+            <!-- Светло-зеленый фон Фан-зоны -->
+            <path d="M 0 0 A 200 200 0 0 0 400 0 Z" fill="#148c20" />
+            
+            <!-- Толстая красная дуга -->
+            <!-- Немного выходим за границы (от -10 до 410), чтобы края не обрезались по толщине -->
+            <path d="M -10 0 A 210 210 0 0 0 410 0" fill="none" stroke="#7b1d28" stroke-width="45" stroke-linecap="butt" />
+            
+            <!-- Темно-серая Сцена (полуэллипс) -->
+            <path d="M 25 0 A 175 75 0 0 0 375 0 Z" fill="#2b2b2b" />
+
+            <!-- Группа для мест (генерируется JS) -->
+            <g id="seats-container"></g>
+        </svg>
+
+        <!-- Overlay Text Elements -->
+        <div class="overlay-scene">СЦЕНА</div>
+        <div class="overlay-fan-zone">ФАН-ЗОНА</div>
+        <div class="overlay-arc-price">300.000 UZS</div>
         
-        <div class="arc-wrapper">
-            <div class="arc-price-tag">300.000 UZS</div>
-            <div class="arc-row" id="arc-row">
-                <!-- Сюда JS добавит SVG с дугой и 30 местами -->
-            </div>
-            <div class="vip-zone vip-left" id="seat-6-1">6 ЧЕЛ.</div>
-            <div class="vip-zone vip-right" id="seat-6-2">6 ЧЕЛ.</div>
-        </div>
-        
-        <div class="kurpachi">
+        <div class="overlay-kurpachi">
             КУРПАЧИ<br>1.000.000 UZS
         </div>
+        
+        <div class="vip-zone vip-left" id="seat-6-1">6 ЧЕЛ.</div>
+        <div class="vip-zone vip-right" id="seat-6-2">6 ЧЕЛ.</div>
     </div>
 
     <div class="lower-section">
@@ -257,29 +263,21 @@
             }
         });
 
-        // Отрисовка полукруга 30 мест через SVG
+        // Отрисовка распределенных 30 мест
         function generateArcSeats() {
-            const arcRow = document.getElementById('arc-row');
+            const seatsContainer = document.getElementById('seats-container');
             const totalSeats = 30;
             
-            let svgHTML = `<svg viewBox="0 0 400 160" style="width: 100%; height: 100%; display: block; overflow: visible;" xmlns="http://www.w3.org/2000/svg">`;
-
             const cx = 200;
-            const cy = -80; 
-            const r = 180; 
+            const cy = 0; 
+            const r = 210; 
 
-            const startAngle = Math.PI * 0.83;
-            const endAngle = Math.PI * 0.17;
+            // Распределяем места от левого края почти до правого края дуги
+            const startAngle = Math.PI * 0.94;
+            const endAngle = Math.PI * 0.06;
 
-            const startX = cx + r * Math.cos(startAngle);
-            const startY = cy + r * Math.sin(startAngle);
-            const endX = cx + r * Math.cos(endAngle);
-            const endY = cy + r * Math.sin(endAngle);
+            let html = '';
 
-            // Толстая красная дуга
-            svgHTML += `<path d="M ${startX} ${startY} A ${r} ${r} 0 0 0 ${endX} ${endY}" fill="none" stroke="#7b1d28" stroke-width="40" stroke-linecap="round"/>`;
-
-            // Места (кружки с цифрами)
             for (let i = 1; i <= totalSeats; i++) {
                 const fraction = (i - 1) / (totalSeats - 1);
                 const angle = startAngle - (startAngle - endAngle) * fraction;
@@ -287,15 +285,14 @@
                 const x = cx + r * Math.cos(angle);
                 const y = cy + r * Math.sin(angle);
                 
-                svgHTML += `
+                html += `
                 <g id="seat-group-1-${i}" class="seat-group">
-                    <circle cx="${x}" cy="${y}" r="8.5" class="seat-circle" id="seat-1-${i}" />
+                    <circle cx="${x}" cy="${y}" r="7.5" class="seat-circle" id="seat-1-${i}" />
                     <text x="${x}" y="${y}" class="seat-text" dy="0.35em" pointer-events="none">${i}</text>
                 </g>`;
             }
 
-            svgHTML += `</svg>`;
-            arcRow.innerHTML = svgHTML;
+            seatsContainer.innerHTML = html;
         }
 
         // Отрисовка нижних 3х рядов по 21 месту
