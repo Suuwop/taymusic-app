@@ -83,7 +83,7 @@
         }
         .seat-text { 
             fill: #7b1d28; 
-            font-size: 9px; 
+            font-size: 8px; 
             font-weight: bold; 
             text-anchor: middle; 
             dominant-baseline: central; 
@@ -272,9 +272,9 @@
             const cy = 0; 
             const r = 210; 
 
-            // Распределяем места от левого края почти до правого края дуги
-            const startAngle = Math.PI * 0.94;
-            const endAngle = Math.PI * 0.06;
+            // Распределяем места так, чтобы они не выходили за края экрана (от x=11 до x=389)
+            const startAngle = Math.PI * 0.855;
+            const endAngle = Math.PI * 0.145;
 
             let html = '';
 
@@ -287,7 +287,7 @@
                 
                 html += `
                 <g id="seat-group-1-${i}" class="seat-group">
-                    <circle cx="${x}" cy="${y}" r="7.5" class="seat-circle" id="seat-1-${i}" />
+                    <circle cx="${x}" cy="${y}" r="6.5" class="seat-circle" id="seat-1-${i}" />
                     <text x="${x}" y="${y}" class="seat-text" dy="0.35em" pointer-events="none">${i}</text>
                 </g>`;
             }
