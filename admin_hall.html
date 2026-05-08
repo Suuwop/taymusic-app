@@ -5,184 +5,201 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Схема Зала</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700&family=Russo+One&display=swap" rel="stylesheet">
     <style>
         body {
             margin: 0;
             padding: 0;
             background-color: #8c8c8c;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Exo 2', sans-serif;
             color: white;
             text-align: center;
         }
         .hall-top {
+            background-color: #0b5912;
             border-bottom-left-radius: 40px;
             border-bottom-right-radius: 40px;
             overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        .zone-fan {
-            background-color: #0b5912;
-            padding-bottom: 30px;
-        }
-        .zone-arc {
-            background-color: #b04e4e; /* Светло-красный */
-            padding-top: 20px;
-            padding-bottom: 20px;
-        }
-        .zone-kurpachi {
-            background-color: #17661e; /* Светло-зеленый (другой оттенок) */
-            padding-top: 15px;
-            padding-bottom: 60px;
             position: relative;
+            padding-bottom: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
         .scene {
             background-color: #2b2b2b;
             border-bottom-left-radius: 50%;
             border-bottom-right-radius: 50%;
-            height: 80px;
+            height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
-            font-weight: bold;
-            margin-bottom: 30px;
-            margin-left: -10%;
-            width: 120%;
+            font-size: 36px;
+            font-family: 'Russo One', sans-serif;
+            margin-bottom: 20px;
+            margin-left: -20%;
+            width: 140%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
         }
         .fan-zone {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 60px;
-        }
-        .arc-row {
-            position: relative;
-            height: 90px;
+            font-size: 24px;
+            font-family: 'Russo One', sans-serif;
             margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        .arc-wrapper {
+            position: relative;
             width: 100%;
+            height: 160px; 
+            margin-bottom: 10px;
         }
-        .seat {
-            width: 14px;
-            height: 14px;
-            background-color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #7b1d28;
-            font-size: 7px;
-            font-weight: bold;
-            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+        .arc-price-tag {
             position: absolute;
-            transition: background-color 0.3s;
-        }
-        .seat.sold {
-            background-color: #e53935; /* Красный цвет для занятых */
-            color: white;
-        }
-        .price-tag {
+            top: 45px;
+            left: 50%;
+            transform: translateX(-50%);
             background-color: #7b1d28;
             border-radius: 20px;
-            padding: 5px 15px;
-            display: inline-block;
-            font-weight: bold;
+            padding: 4px 16px;
+            font-family: 'Russo One', sans-serif;
             font-size: 16px;
-            margin-bottom: 10px;
+            color: white;
             z-index: 10;
-            position: relative;
         }
-        .kurpachi {
-            font-size: 18px;
-            font-weight: bold;
-            margin-top: 10px;
-            line-height: 1.2;
+        .arc-row {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5;
         }
+        .seat-circle { 
+            fill: white; 
+            transition: fill 0.3s; 
+        }
+        .seat-circle.sold { 
+            fill: #e53935; 
+        }
+        .seat-text { 
+            fill: #7b1d28; 
+            font-size: 9px; 
+            font-weight: bold; 
+            text-anchor: middle; 
+            dominant-baseline: central; 
+            font-family: 'Russo One', sans-serif; 
+        }
+        .seat-circle.sold + .seat-text { 
+            fill: white; 
+        }
+        
         .vip-zone {
             background-color: #e8e24c;
             color: black;
-            font-weight: bold;
-            padding: 15px 10px;
+            font-family: 'Russo One', sans-serif;
+            padding: 16px 14px;
             border-radius: 25px;
             position: absolute;
-            bottom: 20px;
-            font-size: 14px;
+            bottom: 5px;
+            font-size: 15px;
+            z-index: 10;
             transition: background-color 0.3s;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
         }
-        .vip-left { left: 10px; transform: rotate(-45deg); }
-        .vip-right { right: 10px; transform: rotate(45deg); }
+        .vip-left { left: 15px; transform: rotate(-45deg); }
+        .vip-right { right: 15px; transform: rotate(45deg); }
         .vip-zone.sold { background-color: #e53935; color: white; }
 
+        .kurpachi {
+            font-family: 'Russo One', sans-serif;
+            font-size: 22px;
+            line-height: 1.2;
+            margin-top: 10px;
+            letter-spacing: 1px;
+        }
+        
         .lower-section {
-            padding: 20px 10px;
+            padding: 25px 10px;
+        }
+        .price-tag-lower {
+            background-color: #7b1d28;
+            border-radius: 20px;
+            padding: 6px 20px;
+            display: inline-block;
+            font-family: 'Russo One', sans-serif;
+            font-size: 18px;
+            color: white;
+            margin-bottom: 20px;
         }
         .blocks-container {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            margin-top: 20px;
         }
         .block-row {
             display: flex;
             justify-content: space-between;
-            gap: 5px;
+            gap: 8px;
         }
         .block {
             background-color: #7b1d28;
-            border-top-left-radius: 15px;
-            border-top-right-radius: 15px;
-            border-bottom-left-radius: 5px;
-            border-bottom-right-radius: 5px;
-            padding: 10px 5px;
+            border-radius: 15px 15px 5px 5px;
+            padding: 12px 4px;
             display: flex;
-            gap: 3px;
+            gap: 5px;
             flex: 1;
             justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         .block-seat-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
         }
         .block-seat {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             background-color: white;
-            border-radius: 3px;
+            border-radius: 4px;
             transition: background-color 0.3s;
         }
         .block-seat.sold {
             background-color: #e53935;
         }
         .block-number {
-            font-size: 10px;
-            font-weight: bold;
+            font-size: 11px;
+            color: white;
+            font-family: 'Russo One', sans-serif;
         }
+        
         .controls {
             padding: 20px;
+            padding-bottom: 40px;
         }
         button.refresh-btn {
             background-color: #2b2b2b;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-family: 'Russo One', sans-serif;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
         }
         button.refresh-btn:active {
-            transform: scale(0.98);
+            transform: scale(0.96);
         }
         #loading {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.8);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 24px;
+            font-family: 'Russo One', sans-serif;
             z-index: 1000;
         }
     </style>
@@ -191,30 +208,25 @@
     <div id="loading">Загрузка билетов...</div>
 
     <div class="hall-top">
-        <div class="zone-fan">
-            <div class="scene">СЦЕНА</div>
-            <div class="fan-zone">ФАН-ЗОНА</div>
-        </div>
+        <div class="scene">СЦЕНА</div>
+        <div class="fan-zone">ФАН-ЗОНА</div>
         
-        <div class="zone-arc">
+        <div class="arc-wrapper">
+            <div class="arc-price-tag">300.000 UZS</div>
             <div class="arc-row" id="arc-row">
-                <!-- Сюда JS добавит 30 мест -->
+                <!-- Сюда JS добавит SVG с дугой и 30 местами -->
             </div>
-            <div class="price-tag">300.000 UZS</div>
-        </div>
-        
-        <div class="zone-kurpachi">
-            <div class="kurpachi">
-                КУРПАЧИ<br>1.000.000 UZS
-            </div>
-            <!-- ID для мест на 6 человек: 6-1 (слева), 6-2 (справа) -->
             <div class="vip-zone vip-left" id="seat-6-1">6 ЧЕЛ.</div>
             <div class="vip-zone vip-right" id="seat-6-2">6 ЧЕЛ.</div>
+        </div>
+        
+        <div class="kurpachi">
+            КУРПАЧИ<br>1.000.000 UZS
         </div>
     </div>
 
     <div class="lower-section">
-        <div class="price-tag">300.000 UZS</div>
+        <div class="price-tag-lower">300.000 UZS</div>
         <div class="blocks-container" id="blocks-container">
             <!-- Сюда JS добавит нижние ряды -->
         </div>
@@ -228,7 +240,6 @@
         // ==========================================
         // НАСТРОЙКИ
         // ==========================================
-        // СЮДА НУЖНО БУДЕТ ВСТАВИТЬ ССЫЛКУ ИЗ GOOGLE APPS SCRIPT!
         const API_URL = "https://script.google.com/macros/s/AKfycbxY4vsZqhUlpvOhnRGWU4v9X4PfKwNEoerVNqE2R2ueFwxJWM8UgMi-HRXNAh0_eHWWqQ/exec";
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -238,7 +249,6 @@
             generateArcSeats();
             generateBlocks();
             
-            // Если ссылка установлена, загружаем данные
             if (API_URL && API_URL.startsWith("https://")) {
                 fetchData();
             } else {
@@ -247,31 +257,45 @@
             }
         });
 
-        // Отрисовка полукруга 30 мест
+        // Отрисовка полукруга 30 мест через SVG
         function generateArcSeats() {
             const arcRow = document.getElementById('arc-row');
             const totalSeats = 30;
             
+            let svgHTML = `<svg viewBox="0 0 400 160" style="width: 100%; height: 100%; display: block; overflow: visible;" xmlns="http://www.w3.org/2000/svg">`;
+
+            const cx = 200;
+            const cy = -80; 
+            const r = 180; 
+
+            const startAngle = Math.PI * 0.83;
+            const endAngle = Math.PI * 0.17;
+
+            const startX = cx + r * Math.cos(startAngle);
+            const startY = cy + r * Math.sin(startAngle);
+            const endX = cx + r * Math.cos(endAngle);
+            const endY = cy + r * Math.sin(endAngle);
+
+            // Толстая красная дуга
+            svgHTML += `<path d="M ${startX} ${startY} A ${r} ${r} 0 0 0 ${endX} ${endY}" fill="none" stroke="#7b1d28" stroke-width="40" stroke-linecap="round"/>`;
+
+            // Места (кружки с цифрами)
             for (let i = 1; i <= totalSeats; i++) {
-                const seat = document.createElement('div');
-                seat.className = 'seat';
-                seat.id = `seat-1-${i}`;
-                seat.innerText = i;
+                const fraction = (i - 1) / (totalSeats - 1);
+                const angle = startAngle - (startAngle - endAngle) * fraction;
                 
-                // Расчет дуги от 170 до 10 градусов
-                const startAngle = Math.PI * 0.94;
-                const endAngle = Math.PI * 0.06;
-                const angle = startAngle - (startAngle - endAngle) * ((i - 1) / (totalSeats - 1));
+                const x = cx + r * Math.cos(angle);
+                const y = cy + r * Math.sin(angle);
                 
-                // Дуга смотрит наверх (радуга)
-                const xPercent = 50 + 46 * Math.cos(angle);
-                const yPercent = 90 - 70 * Math.sin(angle);
-                
-                seat.style.left = `calc(${xPercent}% - 7px)`;
-                seat.style.top = `${yPercent}%`;
-                
-                arcRow.appendChild(seat);
+                svgHTML += `
+                <g id="seat-group-1-${i}" class="seat-group">
+                    <circle cx="${x}" cy="${y}" r="8.5" class="seat-circle" id="seat-1-${i}" />
+                    <text x="${x}" y="${y}" class="seat-text" dy="0.35em" pointer-events="none">${i}</text>
+                </g>`;
             }
+
+            svgHTML += `</svg>`;
+            arcRow.innerHTML = svgHTML;
         }
 
         // Отрисовка нижних 3х рядов по 21 месту
@@ -299,7 +323,7 @@
                         
                         const num = document.createElement('div');
                         num.className = 'block-number';
-                        num.innerText = seatCounter; // От 1 до 21 сквозная нумерация
+                        num.innerText = seatCounter; 
                         
                         seatWrapper.appendChild(seat);
                         seatWrapper.appendChild(num);
@@ -322,13 +346,11 @@
                 // Очистка старых данных
                 document.querySelectorAll('.sold').forEach(el => el.classList.remove('sold'));
                 
-                // Запрос к Google Apps Script
                 const response = await fetch(API_URL);
                 const data = await response.json();
                 
                 if (data.seats && Array.isArray(data.seats)) {
                     data.seats.forEach(seatKey => {
-                        // Ожидаемый формат: 2-11
                         const element = document.getElementById(`seat-${seatKey}`);
                         if (element) {
                             element.classList.add('sold');
