@@ -213,7 +213,7 @@
         // НАСТРОЙКИ
         // ==========================================
         // СЮДА НУЖНО БУДЕТ ВСТАВИТЬ ССЫЛКУ ИЗ GOOGLE APPS SCRIPT!
-        const API_URL = "ТВОЯ_ССЫЛКА_ИЗ_APPS_SCRIPT_ЗДЕСЬ";
+        const API_URL = "https://script.google.com/macros/s/AKfycbxY4vsZqhUlpvOhnRGWU4v9X4PfKwNEoerVNqE2R2ueFwxJWM8UgMi-HRXNAh0_eHWWqQ/exec";
 
         document.addEventListener('DOMContentLoaded', () => {
             Telegram.WebApp.ready();
@@ -223,7 +223,7 @@
             generateBlocks();
             
             // Если ссылка установлена, загружаем данные
-            if (API_URL && !API_URL.includes("ТВОЯ_ССЫЛКА")) {
+            if (API_URL && !API_URL.includes("https://script.google.com/macros/s/AKfycbxY4vsZqhUlpvOhnRGWU4v9X4PfKwNEoerVNqE2R2ueFwxJWM8UgMi-HRXNAh0_eHWWqQ/exec")) {
                 fetchData();
             } else {
                 document.getElementById('loading').style.display = 'none';
